@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SG7123 – Pillow Fight!</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a0e28;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;color:#f0e8d0;overflow:hidden}
+canvas{border:3px solid #8b5e3c;border-radius:4px;image-rendering:pixelated;display:block}
+#hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:6px 12px;background:#110a1c;border:2px solid #8b5e3c;border-bottom:none;border-radius:4px 4px 0 0;font-size:0.75rem;letter-spacing:0.1em}
+.score-s{color:#f4a261;font-weight:700;font-size:0.85rem}
+.score-p{color:#74b3ce;font-weight:700;font-size:0.85rem}
+#title-bar{color:#e9c46a;font-size:0.8rem;text-align:center;flex:1}
+#info{max-width:720px;padding:4px 12px;background:#110a1c;border:2px solid #8b5e3c;border-top:1px solid #2d1a4a;border-radius:0 0 4px 4px;font-size:0.68rem;color:#7c6e5a;text-align:center;letter-spacing:0.06em}
+</style>
+</head>
+<body>
+<div id="hud">
+  <span class="score-s">ROOM S: <span id="scoreS">0</span></span>
+  <span id="title-bar">✦ SG7123 – PILLOW FIGHT! ✦</span>
+  <span class="score-p">ROOM P: <span id="scoreP">0</span></span>
+</div>
+<canvas id="c" width="720" height="400"></canvas>
+<div id="info">S: ← A → | THROW: W | HIDE: S &nbsp;&nbsp;|&nbsp;&nbsp; P: ← L → | THROW: I | HIDE: K</div>
+
+<script>
+const cv=document.getElementById('c');
+const cx=cv.getContext('2d');
+const W=720, H=400;
+
+// ─── Constants ─────────────────────────────────────────────────────────────
+const FLOOR = H - 60; // floor y
+const ROOM_DIV = W / 2; // dividing wall x
+const PLR_SPD = 2.8;
+const PILLOW_SPD = 5.5;
+const HIDE_THRESH = 0.7; // fraction of hide animation before "safe"
+const EVENT_INTERVAL_MIN = 600; // frames between events
+const EVENT_INTERVAL_MAX = 1200;
+const COLORS = {
+  wallS: '#8b4513', wallP: '#2e6b8a',
+  floor: '#b8975a', floorShadow: '#9a7d40',
+  ceiling: '#5a4030', bg: '#2a1a0e',
+  windowFrame: '#d4a660', curtainS: '#c0392b', curtainP: '#2980b9',
+  bed: '#8b3a3a', pillow: '#f5f0e0', pillowEdge: '#d4c9aa',
+};
+const CHAR_COLORS = {
+  s: {skin:'#f4c5a0', hair:'#3a1a00', shirt:'#c0392b', pants:'#2c3e50'},
+  p: {skin:'#c8a070', hair:'#1a0a00', shirt:'#2980b9', pants:'#1a3a1a'},
+  abv: {skin:'#f0d8b0', hair:'#222', shirt:'#888', pants:'#666'},
+  janitor: {skin:'#c89060', hair:'#5a3010', shirt:'#6b8e23', pants:'#4a5a1a'},
+  girl: {skin:'#f8d0b0', hair:'#c8a030'},
+};
+
+// ─── State ──────────────────────────────────────────────────────────────────
+const K = {};
+document.addEventListener('keydown', e=>{ K[e.code]=true; });
+document.addEventListener('keyup',  e=>{ K[e.code]=false; });
+
+let scoreS=0, scoreP=0;
+
+// Player state
+const players = {
+  s: {x:160, y:FLOOR, vx:0, dir:1, hiding:0, hideAnim:0, throwCooldown:0, side:'s', hitFlash:0},
+  p: {x:560, y:FLOOR, vx:0, dir:-1, hiding:0, hideAnim:0, throwCooldown:0, side:'p', hitFlash:0},
+};
+
+// Pillows in flight
+const pillows = [];
+
+// Events
+let nextEvent = EVENT_INTERVAL_MIN + Math.random()*(EVENT_INTERVAL_MAX-EVENT_INTERVAL_MIN);
+let activeEvent = null; // { type, x, progress, phase, floodY }
+let eventWarnAge = 0;
+let frame = 0;
+
+// Particles for hits
+const particles = [];
+
+// Flood overlay
+let floodLevel = 0; // 0–1
+
+// Screen shake
+let shake = 0;
+
+// ─── Drawing helpers ────────────────────────────────────────────────────────
+function roundRect(x,y,w,h,r,fill,stroke){
+  cx.beginPath();
+  cx.roundRect(x,y,w,h,r);
+  if(fill){cx.fillStyle=fill;cx.fill();}
+  if(stroke){cx.strokeStyle=stroke;cx.stroke();}
+}
+
+function pixel(x,y,w,h,color){cx.fillStyle=color;cx.fillRect(x,y,w,h);}
+
+// ─── Background scene ───────────────────────────────────────────────────────
+function drawRoom() {
+  // Overall bg
+  cx.fillStyle=COLORS.bg; cx.fillRect(0,0,W,H);
+
+  // Walls
+  cx.fillStyle=COLORS.wallS; cx.fillRect(0,0,ROOM_DIV,FLOOR);
+  cx.fillStyle=COLORS.wallP; cx.fillRect(ROOM_DIV,0,ROOM_DIV,FLOOR);
+
+  // Ceiling stripe
+  cx.fillStyle=COLORS.ceiling; cx.fillRect(0,0,W,14);
+
+  // Dividing wall
+  cx.fillStyle='#1a1a2e'; cx.fillRect(ROOM_DIV-5,0,10,FLOOR);
+  cx.fillStyle='#2a2a3e'; cx.fillRect(ROOM_DIV-3,0,6,FLOOR);
+
+  // Floor
+  const fp=cx.createLinearGradient(0,FLOOR,0,H);
+  fp.addColorStop(0,COLORS.floor); fp.addColorStop(1,COLORS.floorShadow);
+  cx.fillStyle=fp; cx.fillRect(0,FLOOR,W,H-FLOOR);
+  // Floor planks
+  cx.strokeStyle='rgba(0,0,0,0.12)'; cx.lineWidth=1;
+  for(let fx=0;fx<W;fx+=36){ cx.beginPath(); cx.moveTo(fx,FLOOR); cx.lineTo(fx,H); cx.stroke(); }
+
+  // Windows Room S
+  drawWindow(80, 60, 80, 90, COLORS.curtainS);
+  // Windows Room P
+  drawWindow(560, 60, 80, 90, COLORS.curtainP);
+
+  // Beds Room S (left) and Room P (right)
+  drawBed(60, FLOOR, 'left');
+  drawBed(540, FLOOR, 'right');
+
+  // Poster Room S
+  pixel(130, 80, 50, 35, '#3d1a00');
+  pixel(133, 83, 44, 29, '#7b2d0a');
+  cx.fillStyle='#f4a261'; cx.font='bold 7px Courier New'; cx.textAlign='center';
+  cx.fillText('ROCK!', 130+25, 102);
+
+  // Poster Room P
+  pixel(530, 75, 48, 38, '#0a1a2a');
+  pixel(533, 78, 42, 32, '#1a3a5a');
+  cx.fillStyle='#74b3ce'; cx.font='bold 6px Courier New'; cx.textAlign='center';
+  cx.fillText('SCIENCE', 530+24, 94);
+  cx.fillText('ROCKS', 530+24, 103);
+
+  cx.textAlign='left';
+
+  // Door hint corridor (right side of room P)
+  cx.fillStyle='rgba(0,0,0,0.25)'; cx.fillRect(680,50,36,290);
+  cx.fillStyle='#5a3a1a'; cx.fillRect(680,50,4,290); // door frame
+
+  // Room labels
+  cx.save();
+  cx.font='bold 11px Courier New';
+  cx.fillStyle='rgba(255,200,120,0.4)';
+  cx.fillText('ROOM S', 12, 28);
+  cx.fillText('ROOM P', W/2+12, 28);
+  cx.restore();
+}
+
+function drawWindow(x, y, w, h, curtainColor) {
+  // Frame
+  roundRect(x, y, w, h, 3, COLORS.windowFrame, null);
+  // Sky
+  cx.fillStyle='#6ab0d8'; cx.fillRect(x+4, y+4, w-8, h-8);
+  // Sun/daytime
+  cx.fillStyle='#f0e060';
+  cx.beginPath(); cx.arc(x+20, y+18, 8, 0, Math.PI*2); cx.fill();
+  // Curtains
+  cx.fillStyle=curtainColor;
+  cx.fillRect(x+3, y+3, 12, h-6);
+  cx.fillRect(x+w-15, y+3, 12, h-6);
+  // Crossbar
+  cx.fillStyle='rgba(0,0,0,0.3)';
+  cx.fillRect(x+4, y+h/2-1, w-8, 2);
+  cx.fillRect(x+w/2-1, y+4, 2, h-8);
+}
+
+function drawBed(x, y, side) {
+  const w = 100, h = 30;
+  const bx = side==='left' ? x : x-w;
+  // Bed frame
+  roundRect(bx, y-h, w, h, 4, '#6b3a2a', '#3a1a08');
+  // Mattress
+  roundRect(bx+4, y-h+3, w-8, h-8, 3, '#d4c9aa', null);
+  // Pillow on bed
+  roundRect(bx+6, y-h+4, 28, 16, 3, '#f5f0e0', '#b0a890');
+  // Blanket
+  roundRect(bx+38, y-h+6, w-44, h-10, 2, side==='left'?'#c0392b':'#2980b9', null);
+  // Headboard
+  pixel(side==='left'?bx:bx+w-8, y-h-18, 8, 24, '#5a2808');
+}
+
+// ─── Characters ─────────────────────────────────────────────────────────────
+function drawPlayer(plr) {
+  const p = players[plr];
+  const cc = CHAR_COLORS[plr];
+  cx.save();
+  if(p.hitFlash>0){ cx.globalAlpha=0.5+0.5*Math.sin(p.hitFlash*0.8); }
+
+  let hy = p.y; // head y
+
+  if(p.hideAnim > 0) {
+    // Crouch animation: compress character
+    const sq = Math.min(1, p.hideAnim);
+    hy = p.y - 2 + sq * 14; // stand up y → crouched y
+    drawCharacter(p.x, hy, cc, p.dir, sq, p.throwCooldown);
+  } else {
+    drawCharacter(p.x, hy, cc, p.dir, 0, p.throwCooldown);
+  }
+
+  cx.restore();
+}
+
+function drawCharacter(x, y, cc, dir, crouch, throwCd) {
+  const sq = crouch; // 0 = standing, 1 = crouched
+  const bodyH = Math.round(36 - sq*16);
+  const headY = y - bodyH - 10;
+  const armRaise = throwCd > 0 ? Math.max(0, throwCd/12) : 0;
+
+  // shadow
+  cx.fillStyle='rgba(0,0,0,0.18)'; cx.beginPath(); cx.ellipse(x, y+1, 14, 4, 0, 0, Math.PI*2); cx.fill();
+
+  // legs
+  if(sq < 0.5) {
+    pixel(x-5, y-16+sq*8, 7, 16-sq*8, cc.pants);
+    pixel(x+2, y-16+sq*8, 7, 16-sq*8, cc.pants);
+    // shoes
+    pixel(x-6, y-3, 8, 4, '#1a0a00');
+    pixel(x+2, y-3, 8, 4, '#1a0a00');
+  } else {
+    // crouched legs
+    pixel(x-10, y-8, 9, 8, cc.pants);
+    pixel(x+3, y-8, 9, 8, cc.pants);
+  }
+
+  // body
+  pixel(x-7, y-bodyH-2, 14, bodyH+2, cc.shirt);
+
+  // arms
+  const armY = y-bodyH+2;
+  if(dir > 0) {
+    pixel(x+6, armY - armRaise*8, 5, bodyH-4, cc.skin); // front arm
+    pixel(x-10, armY, 5, bodyH-6, cc.shirt);
+  } else {
+    pixel(x-10, armY - armRaise*8, 5, bodyH-4, cc.skin);
+    pixel(x+6, armY, 5, bodyH-6, cc.shirt);
+  }
+
+  // head
+  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, headY, 8, 0, Math.PI*2); cx.fill();
+  // hair
+  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, headY-3, 8, Math.PI, 0); cx.fill();
+  // eye
+  const eyeX = x + dir*3;
+  cx.fillStyle='#1a0a00'; cx.fillRect(eyeX, headY-1, 2, 2);
+  // mouth smile
+  cx.strokeStyle='#1a0a00'; cx.lineWidth=1;
+  cx.beginPath(); cx.arc(x+dir*2, headY+4, 3, 0.2, Math.PI-0.2); cx.stroke();
+}
+
+// ─── Pillow drawing ──────────────────────────────────────────────────────────
+function drawPillow(pil) {
+  cx.save();
+  cx.translate(pil.x, pil.y);
+  cx.rotate(pil.spin);
+  roundRect(-10,-6,20,12,3, COLORS.pillow, COLORS.pillowEdge);
+  // pillow seam lines
+  cx.strokeStyle='rgba(180,160,130,0.6)'; cx.lineWidth=0.8;
+  cx.beginPath(); cx.moveTo(-8,0); cx.lineTo(8,0); cx.stroke();
+  cx.restore();
+}
+
+// ─── NPCs / Events ──────────────────────────────────────────────────────────
+function drawABV(ev) {
+  // Gray uniformed officer walking through from right to left
+  const x = ev.x, y = FLOOR;
+  const cc = CHAR_COLORS.abv;
+  cx.save();
+  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*4) : Math.max(0,1-(ev.progress-0.7)*3.3);
+
+  // Body
+  pixel(x-7, y-38, 14, 36, cc.shirt);
+  // Pants
+  pixel(x-5, y-16, 10, 16, cc.pants);
+  // Boots
+  pixel(x-6, y-3, 8, 4, '#111');
+  pixel(x+1, y-3, 8, 4, '#111');
+  // Head
+  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-46, 8, 0, Math.PI*2); cx.fill();
+  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, y-49, 8, Math.PI, 0); cx.fill();
+  // Hat
+  pixel(x-9, y-54, 18, 6, '#555');
+  pixel(x-7, y-60, 14, 8, '#555');
+  // Badge "ABV"
+  pixel(x-5, y-30, 10, 7, '#ccc');
+  cx.fillStyle='#111'; cx.font='bold 5px Courier New'; cx.textAlign='center';
+  cx.fillText('ABV', x, y-24);
+  // Baton
+  cx.strokeStyle='#8b6914'; cx.lineWidth=3;
+  cx.beginPath(); cx.moveTo(x+8, y-36); cx.lineTo(x+18, y-20); cx.stroke();
+
+  cx.textAlign='left';
+  cx.restore();
+}
+
+function drawJanitor(ev) {
+  const x = ev.x, y = FLOOR;
+  const cc = CHAR_COLORS.janitor;
+  cx.save();
+  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*4) : Math.max(0,1-(ev.progress-0.7)*3.3);
+
+  pixel(x-7, y-38, 14, 36, cc.shirt);
+  pixel(x-5, y-16, 10, 16, cc.pants);
+  pixel(x-6, y-3, 8, 4, '#333');
+  pixel(x+1, y-3, 8, 4, '#333');
+  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-46, 8, 0, Math.PI*2); cx.fill();
+  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, y-49, 8, Math.PI, 0); cx.fill();
+  // Beer bottle
+  cx.fillStyle='#6b8c2a'; cx.fillRect(x+8, y-42, 6, 20);
+  cx.fillStyle='#c8a030'; cx.fillRect(x+9, y-45, 4, 5);
+  cx.fillStyle='rgba(200,240,200,0.5)'; cx.fillRect(x+9, y-40, 4, 12);
+
+  cx.restore();
+}
+
+function drawGirl(ev) {
+  const x = ev.x, y = FLOOR;
+  const cc = CHAR_COLORS.girl;
+  cx.save();
+  cx.globalAlpha = Math.min(1, ev.phase==='enter' ? ev.progress*5 : Math.max(0,1-(ev.progress-0.6)*4));
+
+  // Dress
+  cx.fillStyle='#e91e8c';
+  cx.beginPath();
+  cx.moveTo(x-10, y); cx.lineTo(x-7, y-28); cx.lineTo(x+7, y-28); cx.lineTo(x+10, y);
+  cx.closePath(); cx.fill();
+  // Legs
+  pixel(x-4, y-10, 5, 10, '#f8d0b0');
+  pixel(x+2, y-10, 5, 10, '#f8d0b0');
+  // Body
+  cx.fillStyle='#e91e8c'; cx.fillRect(x-5, y-38, 10, 10);
+  // Head
+  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-46, 8, 0, Math.PI*2); cx.fill();
+
+  // Very long flowing hair (the signature feature)
+  const hairProgress = ev.progress;
+  cx.fillStyle=cc.hair;
+  cx.beginPath();
+  cx.moveTo(x-7, y-52);
+  // Hair waves flowing behind
+  const dir = ev.dir || 1;
+  for(let i=0;i<=10;i++){
+    const t=i/10;
+    const hx = x - dir*t*90 + Math.sin(t*8+frame*0.15)*5;
+    const hy = y-52 + t*50;
+    if(i===0) cx.moveTo(hx,hy); else cx.lineTo(hx,hy);
+  }
+  cx.lineWidth=8; cx.strokeStyle=cc.hair; cx.lineCap='round'; cx.stroke();
+  // Second hair strand
+  cx.beginPath();
+  for(let i=0;i<=10;i++){
+    const t=i/10;
+    const hx = x - dir*t*80 + Math.sin(t*8+frame*0.15+1)*6;
+    const hy = y-50 + t*52;
+    if(i===0) cx.moveTo(hx,hy); else cx.lineTo(hx,hy);
+  }
+  cx.lineWidth=6; cx.stroke();
+
+  // Water stream chasing her
+  if(ev.progress > 0.1) {
+    cx.strokeStyle='rgba(100,180,255,0.7)';
+    cx.lineWidth=4;
+    const streamX = x - dir*80;
+    for(let s=0;s<3;s++){
+      cx.beginPath();
+      cx.moveTo(streamX+s*8, y-20+s*5);
+      cx.quadraticCurveTo(streamX+dir*20, y+10, streamX+dir*40+s*6, y+s*8);
+      cx.stroke();
+    }
+  }
+  cx.restore();
+}
+
+// ─── Flood overlay ───────────────────────────────────────────────────────────
+function drawFlood() {
+  if(floodLevel<=0) return;
+  const fy = H - floodLevel*(H-FLOOR+30);
+  const wg = cx.createLinearGradient(0,fy,0,H);
+  wg.addColorStop(0,'rgba(60,140,220,0.55)');
+  wg.addColorStop(1,'rgba(30,80,180,0.8)');
+  cx.fillStyle=wg; cx.fillRect(0,fy,W,H-fy);
+  // Ripples
+  cx.strokeStyle='rgba(180,230,255,0.35)'; cx.lineWidth=1.5;
+  for(let rx=30;rx<W;rx+=50){
+    cx.beginPath(); cx.arc(rx+Math.sin(frame*0.05+rx)*8, fy+8, 15, Math.PI, 0); cx.stroke();
+  }
+  // Floating objects
+  if(floodLevel>0.3){
+    [80,200,400,560,680].forEach((fx,i)=>{
+      cx.save();
+      cx.translate(fx+Math.sin(frame*0.04+i)*5, fy+15);
+      cx.rotate(Math.sin(frame*0.03+i)*0.15);
+      roundRect(-8,-5,16,10,2,'#f5f0e0','#b0a890');
+      cx.restore();
+    });
+  }
+}
+
+// ─── Particles ───────────────────────────────────────────────────────────────
+function spawnHit(x, y, count) {
+  for(let i=0;i<count;i++){
+    const ang = Math.random()*Math.PI*2;
+    const spd = 1.5+Math.random()*3;
+    particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-2,life:30,color:['#f5f0e0','#e0d8c0','#c8b896'][Math.floor(Math.random()*3)]});
+  }
+}
+function spawnPenalty(x, y) {
+  spawnHit(x, y, 6);
+  for(let i=0;i<3;i++){
+    particles.push({x:x+Math.random()*20-10,y:y-10-Math.random()*10,vx:0,vy:-1.5,life:50,color:'#e74c3c',text:'−5'});
+  }
+}
+function spawnScore(x, y, text) {
+  particles.push({x,y,vx:0,vy:-2,life:60,color:'#f4a261',text,size:14});
+}
+
+function drawParticles() {
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    if(p.text){
+      cx.save();
+      cx.globalAlpha=p.life/60;
+      cx.fillStyle=p.color;
+      cx.font=`bold ${p.size||10}px Courier New`;
+      cx.textAlign='center';
+      cx.fillText(p.text, p.x, p.y);
+      cx.textAlign='left';
+      cx.restore();
+    } else {
+      cx.save();
+      cx.globalAlpha=p.life/30;
+      cx.fillStyle=p.color;
+      cx.fillRect(p.x-2, p.y-2, 4, 4);
+      cx.restore();
+    }
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life--;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+// ─── Event warning banner ────────────────────────────────────────────────────
+function drawWarning(text, color, sub) {
+  cx.save();
+  cx.globalAlpha=0.85+0.15*Math.sin(frame*0.3);
+  cx.fillStyle=color; cx.fillRect(0, H/2-28, W, 52);
+  cx.fillStyle='#fff'; cx.font='bold 22px Courier New'; cx.textAlign='center';
+  cx.fillText(text, W/2, H/2+2);
+  if(sub){
+    cx.font='12px Courier New'; cx.fillStyle='rgba(255,255,255,0.8)';
+    cx.fillText(sub, W/2, H/2+20);
+  }
+  cx.textAlign='left'; cx.restore();
+}
+
+// ─── Input handling ──────────────────────────────────────────────────────────
+function handleInput() {
+  const s = players.s, p = players.p;
+  const isEvent = activeEvent && activeEvent.phase !== 'done';
+
+  // Room S: WASD
+  s.vx = 0;
+  if(K['ArrowLeft']  && !s.hiding){ s.vx=-PLR_SPD; s.dir=-1; }
+  if(K['ArrowRight'] && !s.hiding){ s.vx= PLR_SPD; s.dir= 1; }
+  if(K['KeyW'] && !s.hiding && s.throwCooldown<=0){ throwPillow(s); }
+  if(K['KeyS']){ s.hideAnim=Math.min(1, s.hideAnim+0.1); s.hiding=s.hideAnim>0.5; }
+  else { s.hideAnim=Math.max(0, s.hideAnim-0.08); s.hiding=false; }
+
+  // Room P: arrow keys + IK
+  p.vx = 0;
+  if(K['KeyA'] && !p.hiding){ p.vx=-PLR_SPD; p.dir=-1; }
+  if(K['KeyD'] && !p.hiding){ p.vx= PLR_SPD; p.dir= 1; }
+  if(K['KeyI'] && !p.hiding && p.throwCooldown<=0){ throwPillow(p); }
+  if(K['KeyK']){ p.hideAnim=Math.min(1, p.hideAnim+0.1); p.hiding=p.hideAnim>0.5; }
+  else { p.hideAnim=Math.max(0, p.hideAnim-0.08); p.hiding=false; }
+}
+
+function throwPillow(plr) {
+  pillows.push({
+    x: plr.x + plr.dir*10, y: plr.y - 28,
+    vx: plr.dir * PILLOW_SPD,
+    vy: -3.5,
+    owner: plr.side,
+    spin: 0,
+    spinV: plr.dir * 0.18,
+    life: 120,
+  });
+  plr.throwCooldown = 28;
+  shake = 3;
+}
+
+// ─── Physics update ──────────────────────────────────────────────────────────
+function update() {
+  frame++;
+  handleInput();
+
+  // Players move
+  for(const [key, plr] of Object.entries(players)){
+    plr.x += plr.vx;
+    // Clamp to own room side
+    if(plr.side==='s'){ plr.x=Math.max(20, Math.min(ROOM_DIV-22, plr.x)); }
+    else               { plr.x=Math.max(ROOM_DIV+22, Math.min(W-20, plr.x)); }
+    if(plr.throwCooldown>0) plr.throwCooldown--;
+    if(plr.hitFlash>0) plr.hitFlash--;
+  }
+
+  // Pillows
+  for(let i=pillows.length-1;i>=0;i--){
+    const pil=pillows[i];
+    pil.x+=pil.vx; pil.y+=pil.vy; pil.vy+=0.28;
+    pil.spin+=pil.spinV;
+    pil.life--;
+
+    // Bounce off floor
+    if(pil.y>FLOOR-8){ pil.y=FLOOR-8; pil.vy*=-0.45; pil.vx*=0.88; pil.spinV*=0.7; }
+    // Bounce off walls
+    if(pil.x<10||pil.x>W-10){ pil.vx*=-0.5; }
+    // Die on dividing wall / after time
+    if(pil.life<=0||(pil.x>ROOM_DIV-6&&pil.x<ROOM_DIV+6&&pil.vy>0)){
+      pillows.splice(i,1); continue;
+    }
+
+    // Hit detection against opposing player
+    for(const [pk, plr] of Object.entries(players)){
+      if(plr.side===pil.owner) continue; // don't hit thrower
+      const dx=plr.x-pil.x, dy=(plr.y-22)-pil.y;
+      if(Math.abs(dx)<18 && Math.abs(dy)<24){
+        // Hit!
+        const pts = plr.hiding ? 2 : 5;
+        if(pil.owner==='s'){ scoreS+=pts; spawnScore(plr.x, plr.y-40, `+${pts}`); }
+        else { scoreP+=pts; spawnScore(plr.x, plr.y-40, `+${pts}`); }
+        plr.hitFlash=18;
+        spawnHit(pil.x, pil.y, 10);
+        pillows.splice(i,1);
+        document.getElementById('score'+pil.owner.toUpperCase()).textContent = pil.owner==='s'?scoreS:scoreP;
+        break;
+      }
+    }
+  }
+
+  // Events
+  updateEvent();
+  if(shake>0) shake-=0.3;
+}
+
+function updateEvent() {
+  nextEvent--;
+  if(!activeEvent && nextEvent<=0){
+    // Trigger random event
+    const types=['abv','janitor','girl'];
+    const t=types[Math.floor(Math.random()*types.length)];
+    activeEvent={
+      type:t, progress:0, phase:'enter',
+      x: t==='girl' ? W+30 : -40,
+      dir: t==='girl' ? -1 : 1,
+      floodY:0, warned:false
+    };
+    nextEvent=EVENT_INTERVAL_MIN+Math.random()*(EVENT_INTERVAL_MAX-EVENT_INTERVAL_MIN);
+  }
+
+  if(!activeEvent) return;
+  const ev=activeEvent;
+
+  // Warning at start
+  if(!ev.warned && ev.progress<0.05){
+    ev.warned=true;
+    eventWarnAge=90;
+  }
+  if(eventWarnAge>0) eventWarnAge--;
+
+  ev.progress=Math.min(1, ev.progress+0.003);
+
+  // Move NPC across screen
+  const spd = ev.type==='girl'?4.5:2.2;
+  ev.x += ev.dir * spd * (ev.phase==='enter'?1:1.5);
+
+  // Phase transitions
+  if(ev.phase==='enter' && ev.progress>0.45){ ev.phase='patrol'; }
+  if(ev.phase==='patrol' && ev.progress>0.7){ ev.phase='exit'; }
+  if(ev.phase==='exit' && (ev.x<-80||ev.x>W+80)){
+    // Check penalty for unhiding players
+    for(const plr of Object.values(players)){
+      if(!plr.hiding && plr.hideAnim<HIDE_THRESH){
+        spawnPenalty(plr.x, plr.y-30);
+        const penalty=5;
+        if(plr.side==='s'){ scoreS=Math.max(0,scoreS-penalty); document.getElementById('scoreS').textContent=scoreS; }
+        else               { scoreP=Math.max(0,scoreP-penalty); document.getElementById('scoreP').textContent=scoreP; }
+      }
+    }
+    if(ev.type==='girl'){
+      // Flood!
+      startFlood();
+    }
+    activeEvent=null;
+  }
+
+  // Flood
+  if(ev.type==='girl' && ev.phase==='patrol'){
+    ev.floodY=Math.min(1, ev.floodY+0.008);
+    floodLevel=ev.floodY;
+  }
+}
+
+function startFlood() {
+  // Flood recedes after a bit
+  let fl=floodLevel;
+  const recede=setInterval(()=>{
+    floodLevel=Math.max(0, floodLevel-0.01);
+    if(floodLevel<=0) clearInterval(recede);
+  },50);
+}
+
+// ─── Main render ─────────────────────────────────────────────────────────────
+function draw() {
+  cx.save();
+  if(shake>0){ cx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); }
+
+  drawRoom();
+
+  // Draw pillows behind players
+  for(const pil of pillows) drawPillow(pil);
+
+  // Players
+  drawPlayer('s');
+  drawPlayer('p');
+
+  // NPCs
+  if(activeEvent){
+    if(activeEvent.type==='abv')     drawABV(activeEvent);
+    else if(activeEvent.type==='janitor') drawJanitor(activeEvent);
+    else if(activeEvent.type==='girl')    drawGirl(activeEvent);
+  }
+
+  // Flood
+  drawFlood();
+
+  // Particles
+  drawParticles();
+
+  // Event warning
+  if(eventWarnAge>0 && activeEvent){
+    const wTexts={abv:'⚠ ABV OFFICER!', janitor:'⚠ JANITOR!', girl:'⚠ LONG-HAIRED GIRL + FLOOD!'};
+    const wColors={abv:'rgba(80,80,80,0.9)', janitor:'rgba(80,120,20,0.9)', girl:'rgba(20,80,160,0.9)'};
+    drawWarning(wTexts[activeEvent.type], wColors[activeEvent.type], 'QUICK — HIDE! (S key / K key)');
+  }
+
+  // Hide indicator
+  for(const [key, plr] of Object.entries(players)){
+    if(plr.hideAnim>0.05){
+      const col = plr.hideAnim>=HIDE_THRESH ? '#2ecc71' : '#e74c3c';
+      cx.fillStyle=col; cx.globalAlpha=0.8;
+      const bw=32, bh=5;
+      cx.fillRect(plr.x-bw/2, plr.y-62, bw*plr.hideAnim, bh);
+      cx.strokeStyle=col; cx.lineWidth=1; cx.globalAlpha=0.5;
+      cx.strokeRect(plr.x-bw/2, plr.y-62, bw, bh);
+      cx.globalAlpha=1;
+    }
+  }
+
+  cx.restore();
+  requestAnimationFrame(loop);
+}
+
+function loop() {
+  update();
+  draw();
+}
+
+loop();
+</script>
+</body>
+</html>
