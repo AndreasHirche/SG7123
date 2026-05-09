@@ -1,675 +1,823 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SG7123 – Pillow Fight!</title>
+<title>SG7123 – Kissenschlacht!</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#1a0e28;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;color:#f0e8d0;overflow:hidden}
-canvas{border:3px solid #8b5e3c;border-radius:4px;image-rendering:pixelated;display:block}
-#hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:6px 12px;background:#110a1c;border:2px solid #8b5e3c;border-bottom:none;border-radius:4px 4px 0 0;font-size:0.75rem;letter-spacing:0.1em}
-.score-s{color:#f4a261;font-weight:700;font-size:0.85rem}
-.score-p{color:#74b3ce;font-weight:700;font-size:0.85rem}
-#title-bar{color:#e9c46a;font-size:0.8rem;text-align:center;flex:1}
-#info{max-width:720px;padding:4px 12px;background:#110a1c;border:2px solid #8b5e3c;border-top:1px solid #2d1a4a;border-radius:0 0 4px 4px;font-size:0.68rem;color:#7c6e5a;text-align:center;letter-spacing:0.06em}
+body{background:#0e0e08;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;color:#d4c89a;overflow:hidden;user-select:none}
+canvas{border:3px solid #5a4a28;border-radius:2px;display:block;image-rendering:pixelated}
+#hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:5px 14px;background:#0a0a06;border:2px solid #5a4a28;border-bottom:none;border-radius:3px 3px 0 0;font-size:0.78rem;letter-spacing:0.08em}
+#info{max-width:720px;padding:4px 14px;background:#0a0a06;border:2px solid #5a4a28;border-top:1px solid #1e1a0e;border-radius:0 0 3px 3px;font-size:0.65rem;color:#6a5e3a;text-align:center;letter-spacing:0.1em}
+.pts-s{color:#c0392b;font-weight:700;font-size:0.82rem}
+.pts-p{color:#2c6a9a;font-weight:700;font-size:0.82rem}
+#title-bar{color:#c8b060;font-size:0.72rem;text-align:center;flex:1;letter-spacing:0.15em}
 </style>
 </head>
 <body>
 <div id="hud">
-  <span class="score-s">ROOM S: <span id="scoreS">0</span></span>
-  <span id="title-bar">✦ SG7123 – PILLOW FIGHT! ✦</span>
-  <span class="score-p">ROOM P: <span id="scoreP">0</span></span>
+  <span class="pts-s" id="labelS">SACHSEN: <span id="scoreS">0</span></span>
+  <span id="title-bar">✦ SG7123 – KISSENSCHLACHT ✦</span>
+  <span class="pts-p" id="labelP">PREUSSEN: <span id="scoreP">0</span></span>
 </div>
 <canvas id="c" width="720" height="400"></canvas>
-<div id="info">S: ← A → | THROW: W | HIDE: S &nbsp;&nbsp;|&nbsp;&nbsp; P: ← L → | THROW: I | HIDE: K</div>
+<div id="info" id="ctrl-info">← → Bewegen &nbsp;|&nbsp; W Werfen &nbsp;|&nbsp; S Ducken</div>
 
 <script>
-const cv=document.getElementById('c');
-const cx=cv.getContext('2d');
-const W=720, H=400;
-
-// ─── Constants ─────────────────────────────────────────────────────────────
-const FLOOR = H - 60; // floor y
-const ROOM_DIV = W / 2; // dividing wall x
+const cv = document.getElementById('c');
+const cx = cv.getContext('2d');
+const W = 720, H = 400;
+const FLOOR = H - 62;
+const ROOM_DIV = W / 2;
 const PLR_SPD = 2.8;
-const PILLOW_SPD = 5.5;
-const HIDE_THRESH = 0.7; // fraction of hide animation before "safe"
-const EVENT_INTERVAL_MIN = 600; // frames between events
-const EVENT_INTERVAL_MAX = 1200;
-const COLORS = {
-  wallS: '#8b4513', wallP: '#2e6b8a',
-  floor: '#b8975a', floorShadow: '#9a7d40',
-  ceiling: '#5a4030', bg: '#2a1a0e',
-  windowFrame: '#d4a660', curtainS: '#c0392b', curtainP: '#2980b9',
-  bed: '#8b3a3a', pillow: '#f5f0e0', pillowEdge: '#d4c9aa',
-};
-const CHAR_COLORS = {
-  s: {skin:'#f4c5a0', hair:'#3a1a00', shirt:'#c0392b', pants:'#2c3e50'},
-  p: {skin:'#c8a070', hair:'#1a0a00', shirt:'#2980b9', pants:'#1a3a1a'},
-  abv: {skin:'#f0d8b0', hair:'#222', shirt:'#888', pants:'#666'},
-  janitor: {skin:'#c89060', hair:'#5a3010', shirt:'#6b8e23', pants:'#4a5a1a'},
-  girl: {skin:'#f8d0b0', hair:'#c8a030'},
+const PILLOW_SPD = 5.8;
+const WIN_SCORE = 40;
+const WALL_SPLIT = FLOOR - 155; // half-painted wall divide
+
+// ── States ──────────────────────────────────────────────────────────────────
+const ST = { SELECT:'select', PLAY:'play', OVER:'over' };
+let state = ST.SELECT;
+let humanSide = 's'; // 's' or 'p'
+let cpuSide = 'p';
+let winner = '';
+
+// ── DDR Color palette ────────────────────────────────────────────────────────
+const C = {
+  wallHi:  '#d0c9b2', // oben: Raufasertapete creme
+  wallLo:  '#6a9060', // unten: DDR-Wandfarbe grün
+  wallLoS: '#7a3a28', // Sachsen: dunkelrot unten
+  wallLoP: '#2a5a7a', // Preußen: stahlblau unten
+  ceiling: '#b8b2a0',
+  floor:   '#8a6a40',
+  floorDk: '#6a5030',
+  divide:  '#282820',
+  bedS:    '#8a2a1a',
+  bedP:    '#1a4a6a',
 };
 
-// ─── State ──────────────────────────────────────────────────────────────────
+// ── Character colors ─────────────────────────────────────────────────────────
+const CC = {
+  s:   {skin:'#f0c898', hair:'#2a1000', shirt:'#1a4a8a', pants:'#2c3020', tie:'#c0392b'},
+  p:   {skin:'#e8c090', hair:'#180800', shirt:'#1a4a8a', pants:'#303838', tie:'#2c6a9a'},
+  abv: {skin:'#f0d8b0', hair:'#1e1e1e', shirt:'#7a7a6a', pants:'#5a5a4a'},
+  jan: {skin:'#c89060', hair:'#5a3010', shirt:'#5a7830', pants:'#4a5820'},
+  carmen: {skin:'#f0c8a0', hair:'#101010'}, // schwarze Haare
+};
+
+// ── Keys ──────────────────────────────────────────────────────────────────────
 const K = {};
-document.addEventListener('keydown', e=>{ K[e.code]=true; });
-document.addEventListener('keyup',  e=>{ K[e.code]=false; });
+document.addEventListener('keydown', e => {
+  K[e.code] = true;
+  if(state===ST.SELECT){
+    if(e.code==='ArrowLeft'||e.code==='ArrowRight'){ humanSide = humanSide==='s'?'p':'s'; cpuSide = humanSide==='s'?'p':'s'; }
+    if(e.code==='Enter'||e.code==='Space'){ startGame(); e.preventDefault(); }
+  } else if(state===ST.OVER){
+    if(e.code==='Enter'||e.code==='Space'){ state=ST.SELECT; }
+  }
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+});
+document.addEventListener('keyup', e => { K[e.code]=false; });
 
-let scoreS=0, scoreP=0;
+// ── Game objects ─────────────────────────────────────────────────────────────
+let players, pillows, particles, activeEvent, nextEvent, frame, shake, floodLevel;
+let cpuThrowTimer, cpuMoveDir, cpuMoveClock;
 
-// Player state
-const players = {
-  s: {x:160, y:FLOOR, vx:0, dir:1, hiding:0, hideAnim:0, throwCooldown:0, side:'s', hitFlash:0},
-  p: {x:560, y:FLOOR, vx:0, dir:-1, hiding:0, hideAnim:0, throwCooldown:0, side:'p', hitFlash:0},
-};
+function startGame() {
+  state = ST.PLAY;
+  cpuSide = humanSide==='s' ? 'p' : 's';
+  players = {
+    s: {x:160, y:FLOOR, vx:0, dir:1, hiding:0, hideAnim:0, throwCD:0, hitFlash:0, side:'s'},
+    p: {x:560, y:FLOOR, vx:0, dir:-1, hiding:0, hideAnim:0, throwCD:0, hitFlash:0, side:'p'},
+  };
+  pillows=[];particles=[];activeEvent=null;floodLevel=0;frame=0;shake=0;
+  nextEvent=500+Math.random()*600;
+  cpuThrowTimer=80+Math.random()*80;
+  cpuMoveDir=0;cpuMoveClock=0;
+  document.getElementById('scoreS').textContent='0';
+  document.getElementById('scoreP').textContent='0';
+}
 
-// Pillows in flight
-const pillows = [];
-
-// Events
-let nextEvent = EVENT_INTERVAL_MIN + Math.random()*(EVENT_INTERVAL_MAX-EVENT_INTERVAL_MIN);
-let activeEvent = null; // { type, x, progress, phase, floodY }
-let eventWarnAge = 0;
-let frame = 0;
-
-// Particles for hits
-const particles = [];
-
-// Flood overlay
-let floodLevel = 0; // 0–1
-
-// Screen shake
-let shake = 0;
-
-// ─── Drawing helpers ────────────────────────────────────────────────────────
-function roundRect(x,y,w,h,r,fill,stroke){
-  cx.beginPath();
-  cx.roundRect(x,y,w,h,r);
+// ── Drawing helpers ──────────────────────────────────────────────────────────
+function rr(x,y,w,h,r,fill,stroke){
+  cx.beginPath(); cx.roundRect(x,y,w,h,r);
   if(fill){cx.fillStyle=fill;cx.fill();}
-  if(stroke){cx.strokeStyle=stroke;cx.stroke();}
+  if(stroke){cx.strokeStyle=stroke;cx.lineWidth=1;cx.stroke();}
 }
+function px(x,y,w,h,c){cx.fillStyle=c;cx.fillRect(x,y,w,h);}
 
-function pixel(x,y,w,h,color){cx.fillStyle=color;cx.fillRect(x,y,w,h);}
-
-// ─── Background scene ───────────────────────────────────────────────────────
+// ── Background / Room ─────────────────────────────────────────────────────────
 function drawRoom() {
-  // Overall bg
-  cx.fillStyle=COLORS.bg; cx.fillRect(0,0,W,H);
+  // Ceiling
+  px(0, 0, W, 16, C.ceiling);
+  // Neonröhre
+  cx.fillStyle='rgba(255,255,220,0.7)';
+  cx.fillRect(W/4, 3, W/2, 6);
+  cx.fillStyle='rgba(255,255,220,0.08)';
+  cx.fillRect(0, 0, W, 30);
 
-  // Walls
-  cx.fillStyle=COLORS.wallS; cx.fillRect(0,0,ROOM_DIV,FLOOR);
-  cx.fillStyle=COLORS.wallP; cx.fillRect(ROOM_DIV,0,ROOM_DIV,FLOOR);
+  // Wall segments per room, DDR half-painted
+  function drawWallSide(x, w, loColor) {
+    px(x, 16, w, WALL_SPLIT-16, C.wallHi);
+    px(x, WALL_SPLIT, w, FLOOR-WALL_SPLIT, loColor);
+    // Concrete panel seams (Plattenbau joints)
+    cx.strokeStyle='rgba(0,0,0,0.1)'; cx.lineWidth=1;
+    for(let jy=40; jy<FLOOR; jy+=55){
+      cx.beginPath(); cx.moveTo(x,jy); cx.lineTo(x+w,jy); cx.stroke();
+    }
+    cx.strokeStyle='rgba(0,0,0,0.07)';
+    for(let jx=x; jx<x+w; jx+=72){
+      cx.beginPath(); cx.moveTo(jx,16); cx.lineTo(jx,FLOOR); cx.stroke();
+    }
+    // Skirting board (Sockelleiste)
+    px(x, FLOOR-5, w, 5, '#3a2a18');
+  }
+  drawWallSide(0, ROOM_DIV, C.wallLoS);
+  drawWallSide(ROOM_DIV, ROOM_DIV, C.wallLoP);
 
-  // Ceiling stripe
-  cx.fillStyle=COLORS.ceiling; cx.fillRect(0,0,W,14);
+  // Dividing wall (Trennwand)
+  px(ROOM_DIV-5, 0, 10, FLOOR, C.divide);
+  px(ROOM_DIV-2, 0, 4, FLOOR, '#323228');
 
-  // Dividing wall
-  cx.fillStyle='#1a1a2e'; cx.fillRect(ROOM_DIV-5,0,10,FLOOR);
-  cx.fillStyle='#2a2a3e'; cx.fillRect(ROOM_DIV-3,0,6,FLOOR);
-
-  // Floor
-  const fp=cx.createLinearGradient(0,FLOOR,0,H);
-  fp.addColorStop(0,COLORS.floor); fp.addColorStop(1,COLORS.floorShadow);
+  // Floor – linoleum
+  const fp = cx.createLinearGradient(0,FLOOR,0,H);
+  fp.addColorStop(0,C.floor); fp.addColorStop(1,C.floorDk);
   cx.fillStyle=fp; cx.fillRect(0,FLOOR,W,H-FLOOR);
-  // Floor planks
-  cx.strokeStyle='rgba(0,0,0,0.12)'; cx.lineWidth=1;
-  for(let fx=0;fx<W;fx+=36){ cx.beginPath(); cx.moveTo(fx,FLOOR); cx.lineTo(fx,H); cx.stroke(); }
+  cx.strokeStyle='rgba(0,0,0,0.08)'; cx.lineWidth=1;
+  for(let fx=0;fx<W;fx+=40){ cx.beginPath();cx.moveTo(fx,FLOOR);cx.lineTo(fx,H);cx.stroke(); }
+  cx.strokeStyle='rgba(255,255,255,0.04)';
+  for(let fy=FLOOR+20;fy<H;fy+=30){ cx.beginPath();cx.moveTo(0,fy);cx.lineTo(W,fy);cx.stroke(); }
 
-  // Windows Room S
-  drawWindow(80, 60, 80, 90, COLORS.curtainS);
-  // Windows Room P
-  drawWindow(560, 60, 80, 90, COLORS.curtainP);
+  // Windows
+  drawDDRWindow(75, 55, 78, 88, C.wallLoS);
+  drawDDRWindow(568, 55, 78, 88, C.wallLoP);
 
-  // Beds Room S (left) and Room P (right)
-  drawBed(60, FLOOR, 'left');
-  drawBed(540, FLOOR, 'right');
+  // Beds
+  drawDDRBed(55, FLOOR, 'left', C.bedS);
+  drawDDRBed(548, FLOOR, 'right', C.bedP);
 
-  // Poster Room S
-  pixel(130, 80, 50, 35, '#3d1a00');
-  pixel(133, 83, 44, 29, '#7b2d0a');
-  cx.fillStyle='#f4a261'; cx.font='bold 7px Courier New'; cx.textAlign='center';
-  cx.fillText('ROCK!', 130+25, 102);
+  // Poster Sachsen (linkes Zimmer)
+  drawPoster(130, 80, 52, 38, '#8b1a0e', '#f0c030', 'FDJ');
+  drawPoster(158, 82, 48, 34, '#1a3a08', '#90c840', 'SPORT IST\nGESON-\nDHEIT');
 
-  // Poster Room P
-  pixel(530, 75, 48, 38, '#0a1a2a');
-  pixel(533, 78, 42, 32, '#1a3a5a');
-  cx.fillStyle='#74b3ce'; cx.font='bold 6px Courier New'; cx.textAlign='center';
-  cx.fillText('SCIENCE', 530+24, 94);
-  cx.fillText('ROCKS', 530+24, 103);
+  // Poster Preußen (rechtes Zimmer)
+  drawPoster(500, 75, 52, 40, '#0a1a2e', '#90b8d8', 'FÜR DEN\nFRIEDEN');
+  drawPoster(525, 130, 40, 28, '#1e1e10', '#c8c060', 'MARX\nENGELS');
 
-  cx.textAlign='left';
+  // VEB Radio Sachsen
+  drawRadio(200, FLOOR);
+  // Shelf Preußen
+  drawShelf(470, FLOOR-55);
 
-  // Door hint corridor (right side of room P)
-  cx.fillStyle='rgba(0,0,0,0.25)'; cx.fillRect(680,50,36,290);
-  cx.fillStyle='#5a3a1a'; cx.fillRect(680,50,4,290); // door frame
-
-  // Room labels
+  // Room labels (klein, verblasst)
   cx.save();
-  cx.font='bold 11px Courier New';
-  cx.fillStyle='rgba(255,200,120,0.4)';
-  cx.fillText('ROOM S', 12, 28);
-  cx.fillText('ROOM P', W/2+12, 28);
+  cx.font='bold 10px Courier New';
+  cx.fillStyle='rgba(120,60,40,0.45)';
+  cx.fillText('ZIMMER S', 10, WALL_SPLIT-8);
+  cx.fillStyle='rgba(40,80,120,0.45)';
+  cx.fillText('ZIMMER P', ROOM_DIV+10, WALL_SPLIT-8);
   cx.restore();
 }
 
-function drawWindow(x, y, w, h, curtainColor) {
-  // Frame
-  roundRect(x, y, w, h, 3, COLORS.windowFrame, null);
-  // Sky
-  cx.fillStyle='#6ab0d8'; cx.fillRect(x+4, y+4, w-8, h-8);
-  // Sun/daytime
-  cx.fillStyle='#f0e060';
-  cx.beginPath(); cx.arc(x+20, y+18, 8, 0, Math.PI*2); cx.fill();
-  // Curtains
-  cx.fillStyle=curtainColor;
-  cx.fillRect(x+3, y+3, 12, h-6);
-  cx.fillRect(x+w-15, y+3, 12, h-6);
-  // Crossbar
-  cx.fillStyle='rgba(0,0,0,0.3)';
-  cx.fillRect(x+4, y+h/2-1, w-8, 2);
-  cx.fillRect(x+w/2-1, y+4, 2, h-8);
+function drawDDRWindow(x, y, w, h, curtainColor) {
+  // Aluminum frame (Aluminiumrahmen – typisch DDR)
+  rr(x, y, w, h, 2, '#b8b0a0', '#808070');
+  // Glas
+  px(x+3, y+3, w-6, h-6, '#c8dde8');
+  // Cloud
+  cx.fillStyle='rgba(255,255,255,0.6)';
+  cx.beginPath(); cx.arc(x+20,y+22,9,0,Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc(x+30,y+20,7,0,Math.PI*2); cx.fill();
+  // Cross bar
+  cx.strokeStyle='#808070'; cx.lineWidth=2;
+  cx.beginPath(); cx.moveTo(x+3,y+h/2); cx.lineTo(x+w-3,y+h/2); cx.stroke();
+  cx.beginPath(); cx.moveTo(x+w/2,y+3); cx.lineTo(x+w/2,y+h-3); cx.stroke();
+  // Curtains (Gardinen, sehr DDR)
+  cx.fillStyle=curtainColor; cx.globalAlpha=0.35;
+  cx.fillRect(x+3, y+3, 10, h-6);
+  cx.fillRect(x+w-13, y+3, 10, h-6);
+  cx.globalAlpha=1;
 }
 
-function drawBed(x, y, side) {
-  const w = 100, h = 30;
+function drawDDRBed(x, y, side, color) {
+  const w=108, h=32;
   const bx = side==='left' ? x : x-w;
-  // Bed frame
-  roundRect(bx, y-h, w, h, 4, '#6b3a2a', '#3a1a08');
-  // Mattress
-  roundRect(bx+4, y-h+3, w-8, h-8, 3, '#d4c9aa', null);
-  // Pillow on bed
-  roundRect(bx+6, y-h+4, 28, 16, 3, '#f5f0e0', '#b0a890');
-  // Blanket
-  roundRect(bx+38, y-h+6, w-44, h-10, 2, side==='left'?'#c0392b':'#2980b9', null);
-  // Headboard
-  pixel(side==='left'?bx:bx+w-8, y-h-18, 8, 24, '#5a2808');
+  // Metallrahmen (Metallbett)
+  rr(bx, y-h, w, h, 2, '#5a5040', '#3a3028');
+  // Matratze
+  rr(bx+4, y-h+3, w-8, h-8, 2, '#c8bea0', null);
+  // Kopfkissen
+  rr(bx+6, y-h+4, 30, 18, 2, '#e8e0cc', '#b0a890');
+  // Decke
+  const dColor = color + 'cc';
+  rr(bx+40, y-h+6, w-46, h-10, 2, color, null);
+  // Kopfteil (Metallstäbe)
+  const hbx = side==='left' ? bx : bx+w-8;
+  px(hbx, y-h-20, 8, 26, '#4a4030');
+  for(let s=0;s<2;s++){ px(hbx+2+s*3, y-h-18, 1, 22, '#6a5840'); }
 }
 
-// ─── Characters ─────────────────────────────────────────────────────────────
-function drawPlayer(plr) {
-  const p = players[plr];
-  const cc = CHAR_COLORS[plr];
-  cx.save();
-  if(p.hitFlash>0){ cx.globalAlpha=0.5+0.5*Math.sin(p.hitFlash*0.8); }
-
-  let hy = p.y; // head y
-
-  if(p.hideAnim > 0) {
-    // Crouch animation: compress character
-    const sq = Math.min(1, p.hideAnim);
-    hy = p.y - 2 + sq * 14; // stand up y → crouched y
-    drawCharacter(p.x, hy, cc, p.dir, sq, p.throwCooldown);
-  } else {
-    drawCharacter(p.x, hy, cc, p.dir, 0, p.throwCooldown);
-  }
-
-  cx.restore();
+function drawPoster(x, y, w, h, bg, textColor, text) {
+  rr(x, y, w, h, 1, bg, '#1a1a10');
+  cx.fillStyle=textColor;
+  cx.font=`bold 7px Courier New`;
+  cx.textAlign='center';
+  const lines = text.split('\n');
+  lines.forEach((l,i) => cx.fillText(l, x+w/2, y+13+i*9));
+  cx.textAlign='left';
 }
 
-function drawCharacter(x, y, cc, dir, crouch, throwCd) {
-  const sq = crouch; // 0 = standing, 1 = crouched
-  const bodyH = Math.round(36 - sq*16);
+function drawRadio(x, y) {
+  px(x-22, y-22, 44, 20, '#4a3a20');
+  px(x-19, y-20, 38, 12, '#2a1a08');
+  // Speaker grill
+  cx.strokeStyle='#3a2a10'; cx.lineWidth=0.8;
+  for(let ry=0;ry<5;ry++){ cx.beginPath(); cx.moveTo(x-19,y-19+ry*2); cx.lineTo(x,y-19+ry*2); cx.stroke(); }
+  // Dial
+  cx.fillStyle='#c8a030'; cx.beginPath(); cx.arc(x+12, y-14, 5, 0, Math.PI*2); cx.fill();
+  cx.fillStyle='#1a0a00'; cx.beginPath(); cx.arc(x+12, y-14, 2, 0, Math.PI*2); cx.fill();
+}
+
+function drawShelf(x, y) {
+  px(x, y, 60, 5, '#5a4020');
+  // Club Cola Flasche
+  cx.fillStyle='#8b1a0a'; cx.fillRect(x+8, y-28, 7, 28);
+  cx.fillStyle='#c82010'; cx.fillRect(x+8, y-32, 7, 6);
+  cx.fillStyle='rgba(200,220,100,0.4)'; cx.fillRect(x+9, y-28, 5, 18);
+  // Bücher
+  [[x+20,'#2a4a6a',22],[x+32,'#4a2a0a',16],[x+40,'#2a3a1a',18]].forEach(([bx,bc,bw])=>{
+    px(bx, y-26, bw, 26, bc);
+    px(bx+1, y-24, bw-2, 2, '#ffffff22');
+  });
+}
+
+// ── Characters ───────────────────────────────────────────────────────────────
+function drawChar(x, y, cc, dir, hideAnim, throwCD) {
+  const sq = Math.min(1, hideAnim);
+  const bodyH = Math.round(36 - sq*18);
   const headY = y - bodyH - 10;
-  const armRaise = throwCd > 0 ? Math.max(0, throwCd/12) : 0;
+  const armRaise = throwCD > 0 ? Math.max(0, throwCD/12) * 8 : 0;
 
-  // shadow
-  cx.fillStyle='rgba(0,0,0,0.18)'; cx.beginPath(); cx.ellipse(x, y+1, 14, 4, 0, 0, Math.PI*2); cx.fill();
+  // Schatten
+  cx.fillStyle='rgba(0,0,0,0.15)'; cx.beginPath(); cx.ellipse(x,y+2,14,4,0,0,Math.PI*2); cx.fill();
 
-  // legs
-  if(sq < 0.5) {
-    pixel(x-5, y-16+sq*8, 7, 16-sq*8, cc.pants);
-    pixel(x+2, y-16+sq*8, 7, 16-sq*8, cc.pants);
-    // shoes
-    pixel(x-6, y-3, 8, 4, '#1a0a00');
-    pixel(x+2, y-3, 8, 4, '#1a0a00');
+  // Beine
+  if(sq < 0.6) {
+    px(x-5, y-14+sq*10, 7, 14-sq*6, cc.pants);
+    px(x+2, y-14+sq*10, 7, 14-sq*6, cc.pants);
+    // Schuhe
+    cx.fillStyle='#1a1008'; cx.beginPath(); cx.roundRect(x-7,y-3,9,4,1); cx.fill();
+    cx.fillStyle='#1a1008'; cx.beginPath(); cx.roundRect(x+2,y-3,9,4,1); cx.fill();
   } else {
-    // crouched legs
-    pixel(x-10, y-8, 9, 8, cc.pants);
-    pixel(x+3, y-8, 9, 8, cc.pants);
+    px(x-12, y-10, 10, 10, cc.pants);
+    px(x+4, y-10, 10, 10, cc.pants);
   }
 
-  // body
-  pixel(x-7, y-bodyH-2, 14, bodyH+2, cc.shirt);
-
-  // arms
-  const armY = y-bodyH+2;
-  if(dir > 0) {
-    pixel(x+6, armY - armRaise*8, 5, bodyH-4, cc.skin); // front arm
-    pixel(x-10, armY, 5, bodyH-6, cc.shirt);
-  } else {
-    pixel(x-10, armY - armRaise*8, 5, bodyH-4, cc.skin);
-    pixel(x+6, armY, 5, bodyH-6, cc.shirt);
+  // Körper (FDJ-Hemd)
+  px(x-7, y-bodyH-2, 14, bodyH+2, cc.shirt);
+  // Pionierhalstuch (rotes Dreieck)
+  if(cc.tie){
+    cx.fillStyle=cc.tie;
+    cx.beginPath();
+    cx.moveTo(x-7, y-bodyH+2);
+    cx.lineTo(x+7, y-bodyH+2);
+    cx.lineTo(x, y-bodyH+10);
+    cx.closePath(); cx.fill();
   }
 
-  // head
+  // Arme
+  const armY = y - bodyH + 2;
+  const frontX = dir > 0 ? x+6 : x-10;
+  const backX  = dir > 0 ? x-10 : x+6;
+  px(frontX, armY - armRaise, 5, bodyH-4, cc.skin);
+  px(backX,  armY, 5, bodyH-6, cc.shirt);
+
+  // Kopf
   cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, headY, 8, 0, Math.PI*2); cx.fill();
-  // hair
-  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, headY-3, 8, Math.PI, 0); cx.fill();
-  // eye
-  const eyeX = x + dir*3;
-  cx.fillStyle='#1a0a00'; cx.fillRect(eyeX, headY-1, 2, 2);
-  // mouth smile
+  // Haare
+  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, headY-2, 8, Math.PI, 0); cx.fill();
+  // Auge
+  cx.fillStyle='#1a0a00'; cx.fillRect(x+dir*2, headY-1, 2, 2);
+  // Mund
   cx.strokeStyle='#1a0a00'; cx.lineWidth=1;
-  cx.beginPath(); cx.arc(x+dir*2, headY+4, 3, 0.2, Math.PI-0.2); cx.stroke();
+  cx.beginPath(); cx.arc(x+dir*2, headY+4, 3, 0.3, Math.PI-0.3); cx.stroke();
 }
 
-// ─── Pillow drawing ──────────────────────────────────────────────────────────
+// ── Pillow ───────────────────────────────────────────────────────────────────
 function drawPillow(pil) {
   cx.save();
-  cx.translate(pil.x, pil.y);
-  cx.rotate(pil.spin);
-  roundRect(-10,-6,20,12,3, COLORS.pillow, COLORS.pillowEdge);
-  // pillow seam lines
-  cx.strokeStyle='rgba(180,160,130,0.6)'; cx.lineWidth=0.8;
+  cx.translate(pil.x, pil.y); cx.rotate(pil.spin);
+  rr(-10,-6,20,12,3,'#e8e0ca','#c0b898');
+  cx.strokeStyle='rgba(160,140,110,0.5)'; cx.lineWidth=0.8;
   cx.beginPath(); cx.moveTo(-8,0); cx.lineTo(8,0); cx.stroke();
   cx.restore();
 }
 
-// ─── NPCs / Events ──────────────────────────────────────────────────────────
+// ── NPCs ─────────────────────────────────────────────────────────────────────
 function drawABV(ev) {
-  // Gray uniformed officer walking through from right to left
-  const x = ev.x, y = FLOOR;
-  const cc = CHAR_COLORS.abv;
+  const x=ev.x, y=FLOOR;
   cx.save();
-  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*4) : Math.max(0,1-(ev.progress-0.7)*3.3);
-
-  // Body
-  pixel(x-7, y-38, 14, 36, cc.shirt);
-  // Pants
-  pixel(x-5, y-16, 10, 16, cc.pants);
-  // Boots
-  pixel(x-6, y-3, 8, 4, '#111');
-  pixel(x+1, y-3, 8, 4, '#111');
-  // Head
-  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-46, 8, 0, Math.PI*2); cx.fill();
-  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, y-49, 8, Math.PI, 0); cx.fill();
-  // Hat
-  pixel(x-9, y-54, 18, 6, '#555');
-  pixel(x-7, y-60, 14, 8, '#555');
-  // Badge "ABV"
-  pixel(x-5, y-30, 10, 7, '#ccc');
-  cx.fillStyle='#111'; cx.font='bold 5px Courier New'; cx.textAlign='center';
-  cx.fillText('ABV', x, y-24);
-  // Baton
-  cx.strokeStyle='#8b6914'; cx.lineWidth=3;
-  cx.beginPath(); cx.moveTo(x+8, y-36); cx.lineTo(x+18, y-20); cx.stroke();
-
+  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*5) : Math.max(0,1-(ev.progress-0.65)*4);
+  // Beine
+  px(x-5, y-16, 7, 16, CC.abv.pants);
+  px(x+2, y-16, 7, 16, CC.abv.pants);
+  cx.fillStyle='#111'; cx.beginPath(); cx.roundRect(x-6,y-3,8,4,1); cx.fill();
+  cx.fillStyle='#111'; cx.beginPath(); cx.roundRect(x+2,y-3,8,4,1); cx.fill();
+  // Körper – grauer Dienst-Mantel
+  px(x-8, y-40, 16, 26, CC.abv.shirt);
+  // Schulterklappen
+  px(x-8, y-40, 4, 3, '#aaa');
+  px(x+4, y-40, 4, 3, '#aaa');
+  // Abzeichen "ABV"
+  px(x-5, y-32, 10, 8, '#ddd');
+  cx.fillStyle='#222'; cx.font='bold 5px Courier New'; cx.textAlign='center';
+  cx.fillText('ABV', x, y-25);
+  // Kopf
+  cx.fillStyle=CC.abv.skin; cx.beginPath(); cx.arc(x, y-47, 8, 0, Math.PI*2); cx.fill();
+  cx.fillStyle=CC.abv.hair; cx.beginPath(); cx.arc(x, y-49, 8, Math.PI, 0); cx.fill();
+  // Uniformmütze
+  px(x-10, y-55, 20, 5, '#666');
+  px(x-8, y-62, 16, 9, '#666');
+  px(x-11, y-56, 22, 2, '#555');
+  // Schlagstock
+  cx.strokeStyle='#7a5a10'; cx.lineWidth=3; cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(x+8, y-36); cx.lineTo(x+20, y-18); cx.stroke();
   cx.textAlign='left';
   cx.restore();
 }
 
-function drawJanitor(ev) {
-  const x = ev.x, y = FLOOR;
-  const cc = CHAR_COLORS.janitor;
+function drawHausmeister(ev) {
+  const x=ev.x, y=FLOOR;
   cx.save();
-  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*4) : Math.max(0,1-(ev.progress-0.7)*3.3);
-
-  pixel(x-7, y-38, 14, 36, cc.shirt);
-  pixel(x-5, y-16, 10, 16, cc.pants);
-  pixel(x-6, y-3, 8, 4, '#333');
-  pixel(x+1, y-3, 8, 4, '#333');
-  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-46, 8, 0, Math.PI*2); cx.fill();
-  cx.fillStyle=cc.hair; cx.beginPath(); cx.arc(x, y-49, 8, Math.PI, 0); cx.fill();
-  // Beer bottle
-  cx.fillStyle='#6b8c2a'; cx.fillRect(x+8, y-42, 6, 20);
-  cx.fillStyle='#c8a030'; cx.fillRect(x+9, y-45, 4, 5);
-  cx.fillStyle='rgba(200,240,200,0.5)'; cx.fillRect(x+9, y-40, 4, 12);
-
+  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*5) : Math.max(0,1-(ev.progress-0.65)*4);
+  px(x-5, y-16, 7, 16, CC.jan.pants);
+  px(x+2, y-16, 7, 16, CC.jan.pants);
+  cx.fillStyle='#2a1808'; cx.beginPath(); cx.roundRect(x-6,y-3,8,4,1); cx.fill();
+  cx.fillStyle='#2a1808'; cx.beginPath(); cx.roundRect(x+2,y-3,8,4,1); cx.fill();
+  px(x-8, y-40, 16, 26, CC.jan.shirt);
+  // Arbeitsmantel (VEB grün)
+  cx.fillStyle='rgba(50,80,20,0.5)'; cx.fillRect(x-9, y-40, 18, 26);
+  // Schürze
+  cx.fillStyle='rgba(100,80,40,0.4)'; cx.fillRect(x-5, y-26, 10, 18);
+  // Bier-Flasche
+  cx.fillStyle='#5a7820'; cx.fillRect(x+9, y-42, 7, 22);
+  cx.fillStyle='#b8a010'; cx.fillRect(x+10, y-45, 5, 6);
+  cx.fillStyle='rgba(200,240,120,0.35)'; cx.fillRect(x+10, y-41, 5, 14);
+  // Kopf
+  cx.fillStyle=CC.jan.skin; cx.beginPath(); cx.arc(x, y-47, 8, 0, Math.PI*2); cx.fill();
+  cx.fillStyle=CC.jan.hair; cx.beginPath(); cx.arc(x, y-49, 7, Math.PI, 0); cx.fill();
+  // Arbeitsmütze
+  px(x-9, y-55, 18, 4, '#5a7830'); px(x-7, y-62, 14, 9, '#5a7830');
   cx.restore();
 }
 
-function drawGirl(ev) {
-  const x = ev.x, y = FLOOR;
-  const cc = CHAR_COLORS.girl;
+function drawCarmen(ev) {
+  const x=ev.x, y=FLOOR;
+  const cc=CC.carmen;
   cx.save();
-  cx.globalAlpha = Math.min(1, ev.phase==='enter' ? ev.progress*5 : Math.max(0,1-(ev.progress-0.6)*4));
+  cx.globalAlpha = ev.phase==='enter' ? Math.min(1,ev.progress*6) : Math.max(0,1-(ev.progress-0.55)*5);
 
-  // Dress
-  cx.fillStyle='#e91e8c';
+  // Kleid (knielang, DDR-typisch)
+  cx.fillStyle='#c0392b';
   cx.beginPath();
-  cx.moveTo(x-10, y); cx.lineTo(x-7, y-28); cx.lineTo(x+7, y-28); cx.lineTo(x+10, y);
+  cx.moveTo(x-10,y); cx.lineTo(x-7,y-30); cx.lineTo(x+7,y-30); cx.lineTo(x+10,y);
   cx.closePath(); cx.fill();
-  // Legs
-  pixel(x-4, y-10, 5, 10, '#f8d0b0');
-  pixel(x+2, y-10, 5, 10, '#f8d0b0');
-  // Body
-  cx.fillStyle='#e91e8c'; cx.fillRect(x-5, y-38, 10, 10);
-  // Head
-  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-46, 8, 0, Math.PI*2); cx.fill();
+  // Beine
+  px(x-4, y-12, 5, 12, cc.skin);
+  px(x+2, y-12, 5, 12, cc.skin);
+  // Schuhe
+  cx.fillStyle='#1a0800'; cx.beginPath(); cx.roundRect(x-5,y-2,6,4,1); cx.fill();
+  cx.fillStyle='#1a0800'; cx.beginPath(); cx.roundRect(x+2,y-2,6,4,1); cx.fill();
+  // Oberkörper
+  px(x-5, y-40, 10, 12, '#d45040');
+  // Kopf
+  cx.fillStyle=cc.skin; cx.beginPath(); cx.arc(x, y-47, 8, 0, Math.PI*2); cx.fill();
 
-  // Very long flowing hair (the signature feature)
-  const hairProgress = ev.progress;
-  cx.fillStyle=cc.hair;
+  // SCHWARZE wehende Haare (très DDR-romantisch)
+  cx.strokeStyle=cc.hair; cx.lineWidth=7; cx.lineCap='round';
   cx.beginPath();
-  cx.moveTo(x-7, y-52);
-  // Hair waves flowing behind
-  const dir = ev.dir || 1;
-  for(let i=0;i<=10;i++){
-    const t=i/10;
-    const hx = x - dir*t*90 + Math.sin(t*8+frame*0.15)*5;
-    const hy = y-52 + t*50;
+  cx.moveTo(x-6, y-54);
+  for(let i=0;i<=12;i++){
+    const t=i/12;
+    const hx = x - ev.dir*t*100 + Math.sin(t*9+frame*0.16)*6;
+    const hy = y-54 + t*55;
     if(i===0) cx.moveTo(hx,hy); else cx.lineTo(hx,hy);
   }
-  cx.lineWidth=8; cx.strokeStyle=cc.hair; cx.lineCap='round'; cx.stroke();
-  // Second hair strand
+  cx.stroke();
+  cx.lineWidth=5;
   cx.beginPath();
-  for(let i=0;i<=10;i++){
-    const t=i/10;
-    const hx = x - dir*t*80 + Math.sin(t*8+frame*0.15+1)*6;
-    const hy = y-50 + t*52;
+  for(let i=0;i<=12;i++){
+    const t=i/12;
+    const hx = x - ev.dir*t*85 + Math.sin(t*9+frame*0.16+1.5)*7;
+    const hy = y-51 + t*56;
     if(i===0) cx.moveTo(hx,hy); else cx.lineTo(hx,hy);
   }
-  cx.lineWidth=6; cx.stroke();
+  cx.stroke();
 
-  // Water stream chasing her
-  if(ev.progress > 0.1) {
-    cx.strokeStyle='rgba(100,180,255,0.7)';
-    cx.lineWidth=4;
-    const streamX = x - dir*80;
-    for(let s=0;s<3;s++){
+  // Wasserstrahl hinter ihr
+  if(ev.progress > 0.08) {
+    const streamOff = ev.dir * 60;
+    cx.strokeStyle='rgba(80,160,255,0.7)'; cx.lineWidth=4; cx.lineCap='round';
+    for(let s=0;s<4;s++){
       cx.beginPath();
-      cx.moveTo(streamX+s*8, y-20+s*5);
-      cx.quadraticCurveTo(streamX+dir*20, y+10, streamX+dir*40+s*6, y+s*8);
+      cx.moveTo(x-streamOff+s*ev.dir*5, y-15+s*4);
+      cx.quadraticCurveTo(x-streamOff*0.5, y+8, x-streamOff*0.1+s*4, y+s*5);
       cx.stroke();
     }
   }
   cx.restore();
 }
 
-// ─── Flood overlay ───────────────────────────────────────────────────────────
+// ── Flood ────────────────────────────────────────────────────────────────────
 function drawFlood() {
   if(floodLevel<=0) return;
-  const fy = H - floodLevel*(H-FLOOR+30);
+  const fy = H - floodLevel*(H-FLOOR+40);
   const wg = cx.createLinearGradient(0,fy,0,H);
-  wg.addColorStop(0,'rgba(60,140,220,0.55)');
-  wg.addColorStop(1,'rgba(30,80,180,0.8)');
+  wg.addColorStop(0,'rgba(50,130,210,0.5)');
+  wg.addColorStop(1,'rgba(20,70,170,0.78)');
   cx.fillStyle=wg; cx.fillRect(0,fy,W,H-fy);
-  // Ripples
-  cx.strokeStyle='rgba(180,230,255,0.35)'; cx.lineWidth=1.5;
-  for(let rx=30;rx<W;rx+=50){
-    cx.beginPath(); cx.arc(rx+Math.sin(frame*0.05+rx)*8, fy+8, 15, Math.PI, 0); cx.stroke();
+  cx.strokeStyle='rgba(160,220,255,0.3)'; cx.lineWidth=1.5;
+  for(let rx=30;rx<W;rx+=55){
+    cx.beginPath(); cx.arc(rx+Math.sin(frame*0.05+rx)*9,fy+10,18,Math.PI,0); cx.stroke();
   }
-  // Floating objects
-  if(floodLevel>0.3){
-    [80,200,400,560,680].forEach((fx,i)=>{
-      cx.save();
-      cx.translate(fx+Math.sin(frame*0.04+i)*5, fy+15);
-      cx.rotate(Math.sin(frame*0.03+i)*0.15);
-      roundRect(-8,-5,16,10,2,'#f5f0e0','#b0a890');
+  if(floodLevel>0.25){
+    [60,160,320,460,610,680].forEach((fx,i)=>{
+      cx.save(); cx.translate(fx+Math.sin(frame*0.04+i)*6,fy+16);
+      cx.rotate(Math.sin(frame*0.03+i)*0.18);
+      rr(-8,-5,16,10,2,'#e8e0ca','#b0a878');
       cx.restore();
     });
   }
 }
 
-// ─── Particles ───────────────────────────────────────────────────────────────
-function spawnHit(x, y, count) {
-  for(let i=0;i<count;i++){
-    const ang = Math.random()*Math.PI*2;
-    const spd = 1.5+Math.random()*3;
-    particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-2,life:30,color:['#f5f0e0','#e0d8c0','#c8b896'][Math.floor(Math.random()*3)]});
-  }
-}
-function spawnPenalty(x, y) {
-  spawnHit(x, y, 6);
-  for(let i=0;i<3;i++){
-    particles.push({x:x+Math.random()*20-10,y:y-10-Math.random()*10,vx:0,vy:-1.5,life:50,color:'#e74c3c',text:'−5'});
-  }
-}
-function spawnScore(x, y, text) {
-  particles.push({x,y,vx:0,vy:-2,life:60,color:'#f4a261',text,size:14});
-}
+// ── Particles ────────────────────────────────────────────────────────────────
+function spawnHit(x,y,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=1.5+Math.random()*3; particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,life:28,color:['#e8e0ca','#d4c8a0','#c0b080'][~~(Math.random()*3)]}); } }
+function spawnText(x,y,txt,color){ particles.push({x,y,vx:0,vy:-1.8,life:70,color,text:txt,sz:13}); }
 
 function drawParticles() {
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
-    if(p.text){
-      cx.save();
-      cx.globalAlpha=p.life/60;
-      cx.fillStyle=p.color;
-      cx.font=`bold ${p.size||10}px Courier New`;
-      cx.textAlign='center';
-      cx.fillText(p.text, p.x, p.y);
-      cx.textAlign='left';
-      cx.restore();
-    } else {
-      cx.save();
-      cx.globalAlpha=p.life/30;
-      cx.fillStyle=p.color;
-      cx.fillRect(p.x-2, p.y-2, 4, 4);
-      cx.restore();
-    }
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life--;
+    cx.save(); cx.globalAlpha=Math.max(0,p.life/(p.text?70:28));
+    if(p.text){ cx.fillStyle=p.color; cx.font=`bold ${p.sz||10}px Courier New`; cx.textAlign='center'; cx.fillText(p.text,p.x,p.y); cx.textAlign='left'; }
+    else { cx.fillStyle=p.color; cx.fillRect(p.x-2,p.y-2,4,4); }
+    cx.restore();
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
     if(p.life<=0) particles.splice(i,1);
   }
 }
 
-// ─── Event warning banner ────────────────────────────────────────────────────
+// ── HUD overlays ─────────────────────────────────────────────────────────────
 function drawWarning(text, color, sub) {
   cx.save();
-  cx.globalAlpha=0.85+0.15*Math.sin(frame*0.3);
-  cx.fillStyle=color; cx.fillRect(0, H/2-28, W, 52);
-  cx.fillStyle='#fff'; cx.font='bold 22px Courier New'; cx.textAlign='center';
-  cx.fillText(text, W/2, H/2+2);
-  if(sub){
-    cx.font='12px Courier New'; cx.fillStyle='rgba(255,255,255,0.8)';
-    cx.fillText(sub, W/2, H/2+20);
-  }
+  cx.globalAlpha=0.88+0.12*Math.sin(frame*0.3);
+  cx.fillStyle=color; cx.fillRect(0,H/2-30,W,56);
+  cx.fillStyle='#fff'; cx.font='bold 21px Courier New'; cx.textAlign='center';
+  cx.fillText(text, W/2, H/2+4);
+  if(sub){ cx.font='11px Courier New'; cx.fillStyle='rgba(255,255,255,0.8)'; cx.fillText(sub,W/2,H/2+22); }
   cx.textAlign='left'; cx.restore();
 }
 
-// ─── Input handling ──────────────────────────────────────────────────────────
-function handleInput() {
-  const s = players.s, p = players.p;
-  const isEvent = activeEvent && activeEvent.phase !== 'done';
+function drawHideBar(plr) {
+  if(plr.hideAnim<0.04) return;
+  const bw=34, bh=5;
+  const col = plr.hideAnim>=0.6 ? '#2ecc71' : '#e74c3c';
+  cx.fillStyle=col; cx.globalAlpha=0.85;
+  cx.fillRect(plr.x-bw/2, plr.y-65, bw*plr.hideAnim, bh);
+  cx.strokeStyle=col; cx.lineWidth=1; cx.globalAlpha=0.4;
+  cx.strokeRect(plr.x-bw/2, plr.y-65, bw, bh);
+  cx.globalAlpha=1;
+}
 
-  // Room S: WASD
-  s.vx = 0;
-  if(K['ArrowLeft']  && !s.hiding){ s.vx=-PLR_SPD; s.dir=-1; }
-  if(K['ArrowRight'] && !s.hiding){ s.vx= PLR_SPD; s.dir= 1; }
-  if(K['KeyW'] && !s.hiding && s.throwCooldown<=0){ throwPillow(s); }
-  if(K['KeyS']){ s.hideAnim=Math.min(1, s.hideAnim+0.1); s.hiding=s.hideAnim>0.5; }
-  else { s.hideAnim=Math.max(0, s.hideAnim-0.08); s.hiding=false; }
+// ── Selection Screen ─────────────────────────────────────────────────────────
+let blinkT = 0;
+function drawSelectScreen() {
+  blinkT++;
+  // DDR terminal look
+  cx.fillStyle='#0a0e06'; cx.fillRect(0,0,W,H);
+  // Scanlines
+  for(let y=0;y<H;y+=3){ cx.fillStyle='rgba(0,0,0,0.18)'; cx.fillRect(0,y,W,1); }
+  // Phosphor glow
+  cx.fillStyle='rgba(80,120,60,0.04)'; cx.fillRect(0,0,W,H);
 
-  // Room P: arrow keys + IK
+  // Title
+  cx.textAlign='center';
+  cx.fillStyle='#90c868';
+  cx.font='bold 28px Courier New';
+  cx.fillText('✦ KISSENSCHLACHT ✦', W/2, 62);
+  cx.font='11px Courier New';
+  cx.fillStyle='#607848';
+  cx.fillText('SG7123  ·  VEB WOHNHEIM BUCHSTRASSE 17  ·  KARL-MARX-STADT  ·  1978', W/2, 88);
+
+  // Dividing line
+  cx.strokeStyle='#405030'; cx.lineWidth=1;
+  cx.beginPath(); cx.moveTo(80,100); cx.lineTo(W-80,100); cx.stroke();
+
+  cx.fillStyle='#a8c878'; cx.font='14px Courier New';
+  cx.fillText('WÄHLE DEINE SEITE:', W/2, 128);
+
+  // Sachsen option
+  const sSelected = humanSide === 's';
+  const pSelected = humanSide === 'p';
+
+  drawSideCard(130, 148, 200, 160, 's', sSelected);
+  drawSideCard(390, 148, 200, 160, 'p', pSelected);
+
+  // Cursor arrow
+  const arrowX = sSelected ? 198 : 458;
+  cx.fillStyle= sSelected ? '#c0392b' : '#2c6a9a';
+  if(Math.floor(blinkT/15)%2===0){
+    cx.font='18px Courier New';
+    cx.fillText('▼', arrowX, 142);
+  }
+
+  cx.fillStyle='#607848'; cx.font='12px Courier New';
+  cx.fillText('← → Seite wechseln    ENTER Bestätigen', W/2, 330);
+
+  cx.fillStyle='#405030'; cx.font='10px Courier New';
+  cx.fillText('Gegner: Computerspieler (KI)', W/2, 352);
+  cx.fillText('Ziel: ' + WIN_SCORE + ' Treffer zuerst gewinnt!', W/2, 368);
+
+  cx.textAlign='left';
+}
+
+function drawSideCard(x, y, w, h, side, selected) {
+  const accentColor = side==='s' ? '#c0392b' : '#2c6a9a';
+  const bgColor = side==='s' ? '#1a0a06' : '#060a14';
+  rr(x, y, w, h, 4, bgColor, selected?accentColor:'#304028');
+  if(selected){
+    cx.save(); cx.strokeStyle=accentColor; cx.lineWidth=2;
+    cx.globalAlpha=0.3+0.2*Math.sin(blinkT*0.1);
+    cx.strokeRect(x+2,y+2,w-4,h-4); cx.restore();
+  }
+
+  cx.textAlign='center';
+  cx.fillStyle=selected?accentColor:'#607848';
+  cx.font=`bold 20px Courier New`;
+  cx.fillText(side==='s'?'SACHSEN':'PREUßEN', x+w/2, y+32);
+
+  // Mini Wappen/Symbol
+  if(side==='s'){
+    // Sachsen: white/green stripes
+    for(let si=0;si<3;si++){
+      cx.fillStyle = si%2===0?'#f0f0f0':'#3a7830';
+      cx.fillRect(x+w/2-20+si*14, y+45, 13, 40);
+    }
+    cx.strokeStyle='#1a1a10'; cx.lineWidth=0.5; cx.strokeRect(x+w/2-20,y+45,42,40);
+  } else {
+    // Preußen: black eagle simplified
+    cx.fillStyle='#1a1a1a'; cx.fillRect(x+w/2-20,y+45,42,40);
+    cx.fillStyle='#c0c0b0'; cx.font='bold 26px sans-serif'; cx.fillText('𝕻', x+w/2, y+75);
+  }
+
+  cx.fillStyle=selected?'#a8c878':'#405030';
+  cx.font='10px Courier New';
+  cx.fillText(side==='s'?'(Spieler)':'(KI)', x+w/2, y+h-12);
+  if(!selected){ cx.fillText(side==='s'?'(KI)':'(Spieler)', x+w/2, y+h-12); }
+  // Actually fix: show player/KI correctly
+  cx.fillStyle=selected?'#a8c878':'#405030';
+  cx.fillText('', x, y); // dummy, corrected below
+  cx.textAlign='left';
+
+  // Correct label
+  const isHuman = side === humanSide;
+  cx.textAlign='center';
+  cx.fillStyle = isHuman ? (side==='s'?'#c0392b':'#2c6a9a') : '#606050';
+  cx.font='bold 11px Courier New';
+  cx.fillText(isHuman ? '[ DU ]' : '[ KI ]', x+w/2, y+h-10);
+  cx.textAlign='left';
+}
+
+// ── Game Over Screen ─────────────────────────────────────────────────────────
+function drawGameOver() {
+  cx.fillStyle='rgba(0,0,0,0.75)'; cx.fillRect(0,0,W,H);
+  cx.textAlign='center';
+  const humanWon = winner === humanSide;
+  cx.fillStyle= humanWon ? '#c8a030' : '#6a6a60';
+  cx.font='bold 36px Courier New';
+  cx.fillText(humanWon ? 'SIEG!' : 'NIEDERLAGE', W/2, 140);
+  cx.font='18px Courier New';
+  cx.fillStyle='#a8c060';
+  const side = humanSide==='s'?'Sachsen':'Preußen';
+  const cpu  = humanSide==='s'?'Preußen':'Sachsen';
+  cx.fillText(humanWon ? `${side} gewinnt die Kissenschlacht!` : `${cpu} (KI) gewinnt die Kissenschlacht!`, W/2, 186);
+  cx.font='14px Courier New'; cx.fillStyle='#6a8040';
+  const sS=parseInt(document.getElementById('scoreS').textContent);
+  const sP=parseInt(document.getElementById('scoreP').textContent);
+  cx.fillText(`Sachsen: ${sS} Treffer   |   Preußen: ${sP} Treffer`, W/2, 220);
+  cx.font='12px Courier New'; cx.fillStyle='#485030';
+  if(Math.floor(frame/20)%2===0)
+    cx.fillText('[ ENTER oder LEERTASTE für neues Spiel ]', W/2, 280);
+  cx.textAlign='left';
+}
+
+// ── CPU AI ────────────────────────────────────────────────────────────────────
+let cpuHideKey = false;
+let eventWarnAge = 0;
+
+function updateCPU() {
+  const cpu = players[cpuSide];
+  cpu.vx = 0;
+
+  // Find incoming pillows
+  const dangerous = pillows.filter(p=>{
+    const toward = cpuSide==='s' ? p.vx<0 : p.vx>0;
+    return toward && p.owner!==cpuSide && Math.abs(p.x-cpu.x)<180;
+  });
+
+  // Dodge
+  if(dangerous.length > 0) {
+    const pil = dangerous[0];
+    if(Math.abs(pil.x-cpu.x)<100){
+      cpu.vx = (pil.x < cpu.x) ? PLR_SPD*0.9 : -PLR_SPD*0.9;
+      cpu.dir = cpu.vx > 0 ? 1 : -1;
+    }
+  } else {
+    // Wander
+    cpuMoveClock--;
+    if(cpuMoveClock<=0){
+      cpuMoveDir = (Math.random()-0.5)*PLR_SPD;
+      cpuMoveClock = 50+Math.random()*60;
+    }
+    cpu.vx = cpuMoveDir;
+    // Clamp to own room
+    if(cpuSide==='s'){ cpu.x=Math.max(20,Math.min(ROOM_DIV-22,cpu.x)); }
+    else             { cpu.x=Math.max(ROOM_DIV+22,Math.min(W-20,cpu.x)); }
+    // Face center (opponent)
+    cpu.dir = cpuSide==='s' ? 1 : -1;
+  }
+
+  // Hide during events
+  if(activeEvent && activeEvent.phase==='patrol'){
+    if(Math.random()<0.04) cpuHideKey=true;
+  } else if(!activeEvent) {
+    cpuHideKey=false;
+  }
+
+  if(cpuHideKey){
+    cpu.hideAnim=Math.min(1,cpu.hideAnim+0.1);
+    cpu.hiding=cpu.hideAnim>0.5;
+  } else {
+    cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);
+    cpu.hiding=false;
+  }
+
+  // Throw
+  cpuThrowTimer--;
+  if(cpuThrowTimer<=0 && !cpu.hiding){
+    cpu.dir = cpuSide==='s' ? 1 : -1;
+    throwPillow(cpu);
+    cpuThrowTimer = 70+Math.random()*80;
+  }
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+function handleHumanInput() {
+  const p = players[humanSide];
   p.vx = 0;
-  if(K['KeyA'] && !p.hiding){ p.vx=-PLR_SPD; p.dir=-1; }
-  if(K['KeyD'] && !p.hiding){ p.vx= PLR_SPD; p.dir= 1; }
-  if(K['KeyI'] && !p.hiding && p.throwCooldown<=0){ throwPillow(p); }
-  if(K['KeyK']){ p.hideAnim=Math.min(1, p.hideAnim+0.1); p.hiding=p.hideAnim>0.5; }
-  else { p.hideAnim=Math.max(0, p.hideAnim-0.08); p.hiding=false; }
+  if(K['ArrowLeft']  && !p.hiding){ p.vx=-PLR_SPD; p.dir=-1; }
+  if(K['ArrowRight'] && !p.hiding){ p.vx= PLR_SPD; p.dir= 1; }
+  if(K['KeyW'] && !p.hiding && p.throwCD<=0) throwPillow(p);
+  if(K['KeyS']){ p.hideAnim=Math.min(1,p.hideAnim+0.1); p.hiding=p.hideAnim>0.5; }
+  else         { p.hideAnim=Math.max(0,p.hideAnim-0.08); p.hiding=false; }
 }
 
 function throwPillow(plr) {
-  pillows.push({
-    x: plr.x + plr.dir*10, y: plr.y - 28,
-    vx: plr.dir * PILLOW_SPD,
-    vy: -3.5,
-    owner: plr.side,
-    spin: 0,
-    spinV: plr.dir * 0.18,
-    life: 120,
-  });
-  plr.throwCooldown = 28;
-  shake = 3;
+  pillows.push({x:plr.x+plr.dir*10, y:plr.y-28, vx:plr.dir*PILLOW_SPD, vy:-3.2, owner:plr.side, spin:0, spinV:plr.dir*0.18, life:130});
+  plr.throwCD=30;
+  shake=4;
 }
 
-// ─── Physics update ──────────────────────────────────────────────────────────
-function update() {
-  frame++;
-  handleInput();
-
-  // Players move
-  for(const [key, plr] of Object.entries(players)){
-    plr.x += plr.vx;
-    // Clamp to own room side
-    if(plr.side==='s'){ plr.x=Math.max(20, Math.min(ROOM_DIV-22, plr.x)); }
-    else               { plr.x=Math.max(ROOM_DIV+22, Math.min(W-20, plr.x)); }
-    if(plr.throwCooldown>0) plr.throwCooldown--;
+// ── Physics ──────────────────────────────────────────────────────────────────
+function updatePhysics() {
+  for(const plr of Object.values(players)){
+    plr.x+=plr.vx;
+    if(plr.side==='s'){ plr.x=Math.max(20,Math.min(ROOM_DIV-22,plr.x)); }
+    else              { plr.x=Math.max(ROOM_DIV+22,Math.min(W-20,plr.x)); }
+    if(plr.throwCD>0) plr.throwCD--;
     if(plr.hitFlash>0) plr.hitFlash--;
   }
 
-  // Pillows
   for(let i=pillows.length-1;i>=0;i--){
     const pil=pillows[i];
     pil.x+=pil.vx; pil.y+=pil.vy; pil.vy+=0.28;
     pil.spin+=pil.spinV;
     pil.life--;
+    if(pil.y>FLOOR-8){pil.y=FLOOR-8;pil.vy*=-0.42;pil.vx*=0.9;pil.spinV*=0.65;}
+    if(pil.x<8){pil.vx=Math.abs(pil.vx)*0.5;}
+    if(pil.x>W-8){pil.vx=-Math.abs(pil.vx)*0.5;}
+    if(pil.life<=0||(pil.x>ROOM_DIV-6&&pil.x<ROOM_DIV+6)){ pillows.splice(i,1); continue; }
 
-    // Bounce off floor
-    if(pil.y>FLOOR-8){ pil.y=FLOOR-8; pil.vy*=-0.45; pil.vx*=0.88; pil.spinV*=0.7; }
-    // Bounce off walls
-    if(pil.x<10||pil.x>W-10){ pil.vx*=-0.5; }
-    // Die on dividing wall / after time
-    if(pil.life<=0||(pil.x>ROOM_DIV-6&&pil.x<ROOM_DIV+6&&pil.vy>0)){
-      pillows.splice(i,1); continue;
-    }
-
-    // Hit detection against opposing player
-    for(const [pk, plr] of Object.entries(players)){
-      if(plr.side===pil.owner) continue; // don't hit thrower
+    for(const plr of Object.values(players)){
+      if(plr.side===pil.owner) continue;
       const dx=plr.x-pil.x, dy=(plr.y-22)-pil.y;
-      if(Math.abs(dx)<18 && Math.abs(dy)<24){
-        // Hit!
+      if(Math.abs(dx)<18&&Math.abs(dy)<24){
         const pts = plr.hiding ? 2 : 5;
-        if(pil.owner==='s'){ scoreS+=pts; spawnScore(plr.x, plr.y-40, `+${pts}`); }
-        else { scoreP+=pts; spawnScore(plr.x, plr.y-40, `+${pts}`); }
-        plr.hitFlash=18;
+        const sc = plr.side==='s' ? 'scoreP' : 'scoreS';
+        const winner_side = plr.side==='s' ? 'p' : 's';
+        const newScore = parseInt(document.getElementById(sc).textContent) + pts;
+        document.getElementById(sc).textContent = newScore;
+        spawnText(plr.x, plr.y-44, `+${pts}`, winner_side==='s'?'#c0392b':'#2c6a9a');
+        plr.hitFlash=20;
         spawnHit(pil.x, pil.y, 10);
         pillows.splice(i,1);
-        document.getElementById('score'+pil.owner.toUpperCase()).textContent = pil.owner==='s'?scoreS:scoreP;
+        if(newScore >= WIN_SCORE){ winner=winner_side; state=ST.OVER; frame=0; }
         break;
       }
     }
   }
-
-  // Events
-  updateEvent();
-  if(shake>0) shake-=0.3;
 }
 
+// ── Events ───────────────────────────────────────────────────────────────────
 function updateEvent() {
   nextEvent--;
   if(!activeEvent && nextEvent<=0){
-    // Trigger random event
-    const types=['abv','janitor','girl'];
-    const t=types[Math.floor(Math.random()*types.length)];
-    activeEvent={
-      type:t, progress:0, phase:'enter',
-      x: t==='girl' ? W+30 : -40,
-      dir: t==='girl' ? -1 : 1,
-      floodY:0, warned:false
-    };
-    nextEvent=EVENT_INTERVAL_MIN+Math.random()*(EVENT_INTERVAL_MAX-EVENT_INTERVAL_MIN);
-  }
-
-  if(!activeEvent) return;
-  const ev=activeEvent;
-
-  // Warning at start
-  if(!ev.warned && ev.progress<0.05){
-    ev.warned=true;
-    eventWarnAge=90;
+    const t=['abv','hausmeister','carmen'][~~(Math.random()*3)];
+    activeEvent={type:t,progress:0,phase:'enter',x:t==='carmen'?W+40:-50,dir:t==='carmen'?-1:1,warned:false,floodY:0};
+    nextEvent=450+Math.random()*550;
+    eventWarnAge=100;
   }
   if(eventWarnAge>0) eventWarnAge--;
+  if(!activeEvent) return;
 
-  ev.progress=Math.min(1, ev.progress+0.003);
+  const ev=activeEvent;
+  ev.progress=Math.min(1,ev.progress+0.003);
+  const spd=ev.type==='carmen'?4.8:2.4;
+  ev.x+=ev.dir*spd*(ev.phase==='exit'?1.6:1);
 
-  // Move NPC across screen
-  const spd = ev.type==='girl'?4.5:2.2;
-  ev.x += ev.dir * spd * (ev.phase==='enter'?1:1.5);
+  if(ev.phase==='enter'&&ev.progress>0.42) ev.phase='patrol';
+  if(ev.phase==='patrol'&&ev.progress>0.68) ev.phase='exit';
 
-  // Phase transitions
-  if(ev.phase==='enter' && ev.progress>0.45){ ev.phase='patrol'; }
-  if(ev.phase==='patrol' && ev.progress>0.7){ ev.phase='exit'; }
-  if(ev.phase==='exit' && (ev.x<-80||ev.x>W+80)){
-    // Check penalty for unhiding players
+  if(ev.type==='carmen'&&ev.phase==='patrol'){
+    ev.floodY=Math.min(1,ev.floodY+0.01);
+    floodLevel=ev.floodY;
+  }
+
+  if(ev.phase==='exit'&&(ev.x<-90||ev.x>W+90)){
+    // Penalty for unhidden players
     for(const plr of Object.values(players)){
-      if(!plr.hiding && plr.hideAnim<HIDE_THRESH){
-        spawnPenalty(plr.x, plr.y-30);
-        const penalty=5;
-        if(plr.side==='s'){ scoreS=Math.max(0,scoreS-penalty); document.getElementById('scoreS').textContent=scoreS; }
-        else               { scoreP=Math.max(0,scoreP-penalty); document.getElementById('scoreP').textContent=scoreP; }
+      if(!plr.hiding&&plr.hideAnim<0.55){
+        const sc = plr.side==='s'?'scoreS':'scoreP';
+        const newScore=Math.max(0,parseInt(document.getElementById(sc).textContent)-5);
+        document.getElementById(sc).textContent=newScore;
+        spawnText(plr.x,plr.y-44,'−5','#e74c3c');
+        spawnHit(plr.x,plr.y-20,6);
       }
     }
-    if(ev.type==='girl'){
-      // Flood!
-      startFlood();
+    if(ev.type==='carmen'){
+      let fl=floodLevel;
+      const t=setInterval(()=>{ floodLevel=Math.max(0,floodLevel-0.015); if(floodLevel<=0)clearInterval(t); },60);
     }
     activeEvent=null;
   }
-
-  // Flood
-  if(ev.type==='girl' && ev.phase==='patrol'){
-    ev.floodY=Math.min(1, ev.floodY+0.008);
-    floodLevel=ev.floodY;
-  }
 }
 
-function startFlood() {
-  // Flood recedes after a bit
-  let fl=floodLevel;
-  const recede=setInterval(()=>{
-    floodLevel=Math.max(0, floodLevel-0.01);
-    if(floodLevel<=0) clearInterval(recede);
-  },50);
-}
-
-// ─── Main render ─────────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────────
 function draw() {
   cx.save();
-  if(shake>0){ cx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); }
+  if(shake>0) cx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2);
 
-  drawRoom();
-
-  // Draw pillows behind players
-  for(const pil of pillows) drawPillow(pil);
-
-  // Players
-  drawPlayer('s');
-  drawPlayer('p');
-
-  // NPCs
-  if(activeEvent){
-    if(activeEvent.type==='abv')     drawABV(activeEvent);
-    else if(activeEvent.type==='janitor') drawJanitor(activeEvent);
-    else if(activeEvent.type==='girl')    drawGirl(activeEvent);
-  }
-
-  // Flood
-  drawFlood();
-
-  // Particles
-  drawParticles();
-
-  // Event warning
-  if(eventWarnAge>0 && activeEvent){
-    const wTexts={abv:'⚠ ABV OFFICER!', janitor:'⚠ JANITOR!', girl:'⚠ LONG-HAIRED GIRL + FLOOD!'};
-    const wColors={abv:'rgba(80,80,80,0.9)', janitor:'rgba(80,120,20,0.9)', girl:'rgba(20,80,160,0.9)'};
-    drawWarning(wTexts[activeEvent.type], wColors[activeEvent.type], 'QUICK — HIDE! (S key / K key)');
-  }
-
-  // Hide indicator
-  for(const [key, plr] of Object.entries(players)){
-    if(plr.hideAnim>0.05){
-      const col = plr.hideAnim>=HIDE_THRESH ? '#2ecc71' : '#e74c3c';
-      cx.fillStyle=col; cx.globalAlpha=0.8;
-      const bw=32, bh=5;
-      cx.fillRect(plr.x-bw/2, plr.y-62, bw*plr.hideAnim, bh);
-      cx.strokeStyle=col; cx.lineWidth=1; cx.globalAlpha=0.5;
-      cx.strokeRect(plr.x-bw/2, plr.y-62, bw, bh);
-      cx.globalAlpha=1;
+  if(state===ST.SELECT){
+    drawSelectScreen();
+  } else {
+    drawRoom();
+    for(const pil of pillows) drawPillow(pil);
+    for(const plr of Object.values(players)){
+      cx.save();
+      if(plr.hitFlash>0) cx.globalAlpha=0.45+0.55*Math.sin(plr.hitFlash*0.7);
+      drawChar(plr.x,plr.y,CC[plr.side],plr.dir,plr.hideAnim,plr.throwCD);
+      cx.restore();
     }
+    if(activeEvent){
+      if(activeEvent.type==='abv') drawABV(activeEvent);
+      else if(activeEvent.type==='hausmeister') drawHausmeister(activeEvent);
+      else drawCarmen(activeEvent);
+    }
+    drawFlood();
+    drawParticles();
+    for(const plr of Object.values(players)) drawHideBar(plr);
+    if(eventWarnAge>0&&activeEvent){
+      const wt={abv:'⚠  ABV-BEAUFTRAGTER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!'};
+      const wc={abv:'rgba(60,60,55,0.92)',hausmeister:'rgba(50,70,15,0.92)',carmen:'rgba(15,50,130,0.92)'};
+      drawWarning(wt[activeEvent.type],wc[activeEvent.type],'SCHNELL DUCKEN!  (S-Taste)');
+    }
+    if(state===ST.OVER) drawGameOver();
   }
 
   cx.restore();
-  requestAnimationFrame(loop);
 }
 
+// ── Loop ─────────────────────────────────────────────────────────────────────
 function loop() {
-  update();
+  frame++;
+  if(shake>0) shake-=0.35;
+  if(state===ST.PLAY){
+    handleHumanInput();
+    updateCPU();
+    updatePhysics();
+    updateEvent();
+  }
   draw();
+  requestAnimationFrame(loop);
 }
 
 loop();
