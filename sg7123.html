@@ -7,24 +7,25 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%23cc1500'/><text x='32' y='46' font-family='monospace' font-size='28' font-weight='bold' fill='%23ffd700' text-anchor='middle'>LP</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0e0e08;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:16px;min-height:100dvh;font-family:'Courier New',monospace;color:#d4c89a;overflow:hidden;user-select:none;touch-action:none}
-canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;max-height:58dvh;width:auto;height:auto}
+body{background:#0e0e08;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;font-family:'Courier New',monospace;color:#d4c89a;overflow:hidden;user-select:none;touch-action:none}
+canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;max-height:60dvh;width:auto;height:auto}
 #hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:5px 14px;background:#0a0a06;border:2px solid #5a4a28;border-bottom:none;border-radius:3px 3px 0 0;font-size:0.78rem;letter-spacing:0.08em}
-#info{display:none}
+#info{max-width:720px;width:100%;padding:3px 14px;background:#0a0a06;border:2px solid #5a4a28;border-top:1px solid #1e1a0e;border-radius:0 0 3px 3px;font-size:0.62rem;color:#6a5e3a;text-align:center;letter-spacing:0.08em}
 .pts-s{color:#d4a820;font-weight:700;font-size:0.82rem}
 .pts-p{color:#b0b8b0;font-weight:700;font-size:0.82rem}
 #title-bar{color:#c8b060;font-size:0.72rem;text-align:center;flex:1;letter-spacing:0.15em}
-#touch-ctrl{display:flex;width:100%;max-width:720px;padding:8px 10px;justify-content:space-between;align-items:center}
+#touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 10px;justify-content:space-between;align-items:center}
 #tc-left,#tc-right{display:flex;align-items:center;justify-content:center}
 .dpad{display:grid;grid-template-columns:repeat(3,clamp(44px,11vw,56px));grid-auto-rows:clamp(44px,11vw,56px);gap:3px}
 .dpad>span{display:block}
 .tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
+.dpad .tc{width:100%;height:100%}
 .dpad .tc svg{width:55%;height:55%}
 .tc-throw svg{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
 .tc-throw{width:90px!important;height:54px!important;border-radius:0!important;padding:2px;
   clip-path:path('M 0,0 Q 45,11 90,0 Q 74,27 90,54 Q 45,43 0,54 Q 16,27 0,0 Z')}
-@media(pointer:coarse){canvas{max-height:46dvh}}
+@media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}canvas{max-height:46dvh}body{justify-content:flex-start}}
 @media(pointer:coarse) and (orientation:landscape){
   body{flex-direction:row;overflow:hidden;align-items:center;justify-content:center}
   #hud{position:absolute;top:0;left:0;right:0;z-index:10;max-width:none;border-radius:0;border-left:none;border-right:none;font-size:0.6rem;padding:2px 8px}
@@ -183,7 +184,7 @@ function drawRoom(){
 
   // Wappen an der Wand
   const ww=80,wh=96;
-  drawWappenSachsen(W/4-ww/2,80,ww,wh);
+  drawWappenSachsen(W/4-ww/2+24,80,ww,wh);
   drawWappenPreussen(3*W/4-ww/2,80,ww,wh);
 }
 
