@@ -116,31 +116,31 @@ function playSound(type){
 const K={};
 document.addEventListener('keydown',e=>{
   K[e.code]=true;
-  if(state===ST.SPLASH){state=ST.SELECT;e.preventDefault();return;}
-  if(state===ST.SELECT){
+  if(state===ST.SPLASH){
     if(e.code==='ArrowLeft'||e.code==='ArrowRight'){humanSide=humanSide==='s'?'p':'s';cpuSide=humanSide==='s'?'p':'s';}
-    if(e.code==='Enter'||e.code==='Space'){startGame();e.preventDefault();}
-  }else if(state===ST.OVER&&(e.code==='Enter'||e.code==='Space')){state=ST.SELECT;}
+    if(e.code==='Enter'||e.code==='Space'){startGame();}
+    e.preventDefault();return;
+  }
+  if(state===ST.OVER&&(e.code==='Enter'||e.code==='Space')){state=ST.SPLASH;}
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
 });
 document.addEventListener('keyup',e=>K[e.code]=false);
 
 // Touch controls
-let _touchFromSplash=false;
 ['tc-l','tc-r','tc-w','tc-s','tc-up'].forEach(id=>{
   const btn=document.getElementById(id);if(!btn)return;
   const code={'tc-l':'ArrowLeft','tc-r':'ArrowRight','tc-w':'Space','tc-s':'ArrowDown','tc-up':'ArrowUp'}[id];
   btn.addEventListener('touchstart',e=>{
     K[code]=true;btn.classList.add('on');e.preventDefault();
-    if(state===ST.SPLASH){state=ST.SELECT;_touchFromSplash=true;return;}
-    _touchFromSplash=false;
-    if(state===ST.SELECT){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}
+    if(state===ST.SPLASH){
+      if(id==='tc-l'||id==='tc-r'){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}
+      return;
+    }
   },{passive:false});
   btn.addEventListener('touchend',e=>{
     K[code]=false;btn.classList.remove('on');e.preventDefault();
-    if(_touchFromSplash){_touchFromSplash=false;return;}
-    if(state===ST.SELECT&&id==='tc-w'){startGame();}
-    if(state===ST.OVER){state=ST.SELECT;}
+    if(state===ST.SPLASH&&id==='tc-w'){startGame();}
+    if(state===ST.OVER){state=ST.SPLASH;}
   },{passive:false});
 });
 
@@ -153,7 +153,7 @@ document.addEventListener('touchstart',function fs(){
 },{once:true,passive:true});
 
 // ── State ─────────────────────────────────────────────────────────────────
-const ST={SPLASH:'splash',SELECT:'select',PLAY:'play',OVER:'over'};
+const ST={SPLASH:'splash',PLAY:'play',OVER:'over'};
 let state=ST.SPLASH,humanSide='s',cpuSide='p',winner='';
 
 // ── Colors ────────────────────────────────────────────────────────────────
@@ -637,37 +637,46 @@ function drawWappenPreussen(x,y,w,h){
   cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
 }
 
-// ── Splash Screen ─────────────────────────────────────────────────────────
+// ── Splash Screen (+ team selection) ─────────────────────────────────────
 function drawSplash(){
   blinkT++;
-  // Background: M2.png or fallback
+  // Background
   if(_splashImg){cx.drawImage(_splashImg,0,0,W,H);}
   else{cx.fillStyle='#0a0e06';cx.fillRect(0,0,W,H);}
-  // Dark overlay to make text readable
-  cx.fillStyle='rgba(0,0,0,0.52)';cx.fillRect(0,0,W,H);
-  // ZX Spectrum scanlines
-  for(let y=0;y<H;y+=2){cx.fillStyle='rgba(0,0,0,0.22)';cx.fillRect(0,y,W,1);}
-  // ZX Spectrum color border flash (cycling)
+  cx.fillStyle='rgba(0,0,0,0.54)';cx.fillRect(0,0,W,H);
+  for(let sy=0;sy<H;sy+=2){cx.fillStyle='rgba(0,0,0,0.22)';cx.fillRect(0,sy,W,1);}
+  // ZX border
   const zxCols=['#ff0000','#ffff00','#00ffff','#00ff00','#ff00ff','#0000ff'];
   const bc=zxCols[Math.floor(blinkT/8)%zxCols.length];
   cx.strokeStyle=bc;cx.lineWidth=6;cx.strokeRect(6,6,W-12,H-12);
   cx.strokeStyle='rgba(0,0,0,0.6)';cx.lineWidth=2;cx.strokeRect(10,10,W-20,H-20);
   cx.globalAlpha=1;
-  // Main title block (ZX Spectrum style — bright cyan on black)
-  const titleY=H/2-48;
-  cx.fillStyle='#000000';cx.fillRect(W/2-220,titleY-28,440,42);
-  cx.fillStyle='#00ffff';cx.font='bold 32px "Courier New",monospace';cx.textAlign='center';
+  // Title
+  cx.textAlign='center';
+  const titleY=38;
+  cx.fillStyle='#000000';cx.fillRect(W/2-220,titleY-26,440,38);
+  cx.fillStyle='#00ffff';cx.font='bold 28px "Courier New",monospace';
   cx.fillText('LENINPLATZ  1987',W/2,titleY);
-  cx.fillStyle='#000000';cx.fillRect(W/2-200,titleY+10,400,24);
-  cx.fillStyle='#c8a030';cx.font='15px "Courier New",monospace';
-  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,titleY+28);
-  // Blinking "press any key" (ZX Spectrum white)
-  if(Math.floor(blinkT/18)%2===0){
-    cx.fillStyle='#000000';cx.fillRect(W/2-210,H/2+30,420,24);
-    cx.fillStyle='#ffffff';cx.font='bold 14px "Courier New",monospace';
-    cx.fillText('DRÜCKE EINE TASTE  ZUM  STARTEN',W/2,H/2+46);
+  cx.fillStyle='#000000';cx.fillRect(W/2-200,titleY+10,400,20);
+  cx.fillStyle='#c8a030';cx.font='13px "Courier New",monospace';
+  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,titleY+24);
+  // Team selection header
+  cx.fillStyle='#a8c878';cx.font='bold 12px "Courier New",monospace';
+  cx.fillText('── WÄHLE DEINE SEITE ──',W/2,80);
+  // Side cards
+  drawSideCard(130,88,200,150,'s',humanSide==='s');
+  drawSideCard(390,88,200,150,'p',humanSide==='p');
+  // Blinking selection arrow
+  const ax=humanSide==='s'?230:490;
+  if(Math.floor(blinkT/15)%2===0){
+    cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';
+    cx.font='16px "Courier New",monospace';cx.fillText('▼',ax,84);
   }
-  // ZX copyright line
+  // Controls hint
+  cx.fillStyle='#000';cx.fillRect(W/2-230,246,460,18);
+  cx.fillStyle='#607848';cx.font='11px "Courier New",monospace';
+  cx.fillText('← → Seite wählen    LEERTASTE Starten',W/2,259);
+  // Bottom bar
   cx.fillStyle='rgba(0,0,0,0.7)';cx.fillRect(0,H-28,W,28);
   cx.fillStyle='#c8c8c8';cx.font='10px "Courier New",monospace';
   cx.fillText('Leertaste für Werfen / Bestätigen',W/2,H-10);
@@ -676,21 +685,6 @@ function drawSplash(){
 
 // ── Select Screen ─────────────────────────────────────────────────────────
 let blinkT=0;
-function drawSelectScreen(){
-  blinkT++;
-  cx.fillStyle='#0a0e06';cx.fillRect(0,0,W,H);
-  for(let y=0;y<H;y+=3){cx.fillStyle='rgba(0,0,0,0.18)';cx.fillRect(0,y,W,1);}
-  cx.textAlign='center';
-  cx.fillStyle='#90c868';cx.font='bold 28px Courier New';cx.fillText('✦ LENINPLATZ 1987 ✦',W/2,62);
-  cx.strokeStyle='#405030';cx.lineWidth=1;cx.beginPath();cx.moveTo(80,80);cx.lineTo(W-80,80);cx.stroke();
-  cx.fillStyle='#a8c878';cx.font='14px Courier New';cx.fillText('WÄHLE DEINE SEITE:',W/2,128);
-  drawSideCard(130,148,200,160,'s',humanSide==='s');drawSideCard(390,148,200,160,'p',humanSide==='p');
-  const ax=humanSide==='s'?198:458;
-  if(Math.floor(blinkT/15)%2===0){cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';cx.font='18px Courier New';cx.fillText('▼',ax,142);}
-  cx.fillStyle='#607848';cx.font='12px Courier New';cx.fillText('← → Seite wählen    LEERTASTE Bestätigen',W/2,330);
-  cx.fillStyle='#405030';cx.font='10px Courier New';cx.fillText('Gegner: Computerspieler (KI)   |   Ziel: '+WIN_SCORE+' Treffer gewinnt',W/2,352);
-  cx.textAlign='left';
-}
 function drawSideCard(x,y,w,h,side,sel){
   const ac=side==='s'?'#d4a820':'#909090',bg=side==='s'?'#1a1408':'#101010';
   rr(x,y,w,h,4,bg,sel?ac:'#304028');
@@ -848,8 +842,6 @@ function draw(){
   if(shake>0)cx.translate(Math.random()*shake-shake/2,Math.random()*shake-shake/2);
   if(state===ST.SPLASH){
     drawSplash();
-  }else if(state===ST.SELECT){
-    drawSelectScreen();
   }else{
     drawRoom();
     for(const pil of pillows)drawPillow(pil);
