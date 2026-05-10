@@ -126,11 +126,22 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>K[e.code]=false);
 
 // Touch controls
+let _touchFromSplash=false;
 ['tc-l','tc-r','tc-w','tc-s','tc-up'].forEach(id=>{
   const btn=document.getElementById(id);if(!btn)return;
   const code={'tc-l':'ArrowLeft','tc-r':'ArrowRight','tc-w':'Space','tc-s':'ArrowDown','tc-up':'ArrowUp'}[id];
-  btn.addEventListener('touchstart',e=>{K[code]=true;btn.classList.add('on');e.preventDefault();if(state===ST.SPLASH){state=ST.SELECT;return;}if(state===ST.SELECT){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}},{passive:false});
-  btn.addEventListener('touchend',e=>{K[code]=false;btn.classList.remove('on');if(state===ST.SELECT&&id==='tc-w'){startGame();}e.preventDefault();},{passive:false});
+  btn.addEventListener('touchstart',e=>{
+    K[code]=true;btn.classList.add('on');e.preventDefault();
+    if(state===ST.SPLASH){state=ST.SELECT;_touchFromSplash=true;return;}
+    _touchFromSplash=false;
+    if(state===ST.SELECT){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}
+  },{passive:false});
+  btn.addEventListener('touchend',e=>{
+    K[code]=false;btn.classList.remove('on');e.preventDefault();
+    if(_touchFromSplash){_touchFromSplash=false;return;}
+    if(state===ST.SELECT&&id==='tc-w'){startGame();}
+    if(state===ST.OVER){state=ST.SELECT;}
+  },{passive:false});
 });
 
 // Fullscreen on first touch (Android Chrome)
