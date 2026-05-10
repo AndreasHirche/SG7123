@@ -133,6 +133,9 @@ const CC={
   teurich:{skin:'#f0c8b0',hair:'#c0392b',shirt:'#9a60c0',pants:'#3a3050'},
 };
 const WIN_SCORE=40;
+const BED_H=32;
+const BEDS={s:{x1:55,x2:163},p:{x1:440,x2:548}};
+function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
 let players,pillows,particles,activeEvent,nextEvent,frame,shake,floodLevel;
@@ -192,11 +195,11 @@ function drawRoom(){
   drawRadio(200,FLOOR);drawShelf(470,FLOOR-55);
 
   // Zimmer-Schriftzug
-  cx.font='bold 32px Courier New';cx.textAlign='left';
-  cx.fillStyle='rgba(0,0,0,0.45)';cx.fillText('ZIMMER S',16,WALL_SPLIT-12);
-  cx.fillStyle='rgba(210,75,45,0.88)';cx.fillText('ZIMMER S',14,WALL_SPLIT-14);
-  cx.fillStyle='rgba(0,0,0,0.45)';cx.fillText('ZIMMER P',W/2+16,WALL_SPLIT-12);
-  cx.fillStyle='rgba(45,100,185,0.88)';cx.fillText('ZIMMER P',W/2+14,WALL_SPLIT-14);
+  cx.font='bold 48px Courier New';cx.textAlign='center';
+  cx.fillStyle='rgba(0,0,0,0.55)';cx.fillText('ZIMMER S',W/4+2,237);
+  cx.fillStyle='rgba(210,75,45,0.88)';cx.fillText('ZIMMER S',W/4,235);
+  cx.fillStyle='rgba(0,0,0,0.55)';cx.fillText('ZIMMER P',3*W/4+2,237);
+  cx.fillStyle='rgba(45,100,185,0.88)';cx.fillText('ZIMMER P',3*W/4,235);
   cx.textAlign='left';
 }
 
@@ -636,10 +639,19 @@ function updateCPU(){
     cpuMoveClock--;if(cpuMoveClock<=0){cpuMoveDir=(Math.random()-0.5)*2.8;cpuMoveClock=50+Math.random()*60;}
     cpu.vx=cpuMoveDir;cpu.dir=cpuSide==='s'?1:-1;
   }
-  if(activeEvent&&activeEvent.phase==='patrol'){if(Math.random()<0.04)cpuHideKey=true;}
-  else if(!activeEvent)cpuHideKey=false;
-  if(cpuHideKey&&cpu.onGround){cpu.hideAnim=Math.min(1,cpu.hideAnim+0.1);cpu.hiding=cpu.hideAnim>0.5;}
-  else{cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;}
+  if(activeEvent&&activeEvent.type==='carmen'&&activeEvent.phase==='patrol'){
+    const bedCX=cpuSide==='s'?109:494;
+    if(!isOnBed(cpu)){
+      if(Math.abs(cpu.x-bedCX)>25)cpu.vx=(cpu.x<bedCX?1:-1)*2.8;
+      if(cpu.onGround&&Math.random()<0.06){cpu.vy=-8;cpu.onGround=false;}
+    }
+    cpuHideKey=false;cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;
+  }else{
+    if(activeEvent&&activeEvent.phase==='patrol'){if(Math.random()<0.04)cpuHideKey=true;}
+    else if(!activeEvent)cpuHideKey=false;
+    if(cpuHideKey&&cpu.onGround){cpu.hideAnim=Math.min(1,cpu.hideAnim+0.1);cpu.hiding=cpu.hideAnim>0.5;}
+    else{cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;}
+  }
   cpuThrowTimer--;
   if(cpuThrowTimer<=0&&!cpu.hiding){
     cpu.dir=cpuSide==='s'?1:-1;throwPillow(cpu);cpuThrowTimer=70+Math.random()*80;
@@ -666,7 +678,11 @@ function updatePhysics(){
   for(const plr of Object.values(players)){
     plr.x+=plr.vx;
     plr.y+=plr.vy;plr.vy+=0.45;
-    if(plr.y>=FLOOR){plr.y=FLOOR;plr.vy=0;plr.onGround=true;}else plr.onGround=false;
+    const b=BEDS[plr.side];
+    if(plr.vy>=0&&plr.y>=FLOOR-BED_H&&plr.x>=b.x1&&plr.x<=b.x2){
+      plr.y=FLOOR-BED_H;plr.vy=0;plr.onGround=true;
+    }else if(plr.y>=FLOOR){plr.y=FLOOR;plr.vy=0;plr.onGround=true;}
+    else plr.onGround=false;
     if(plr.side==='s')plr.x=Math.max(20,Math.min(W/2-22,plr.x));
     else plr.x=Math.max(W/2+22,Math.min(W-20,plr.x));
     if(plr.throwCD>0)plr.throwCD--;if(plr.hitFlash>0)plr.hitFlash--;
@@ -720,7 +736,8 @@ function updateEvent(){
   if(ev.phase==='exit'&&(ev.x<-100||ev.x>W+100)){
     const penalty=ev.type==='teurich'?10:5;
     for(const plr of Object.values(players)){
-      if(!plr.hiding&&plr.hideAnim<0.55){
+      const safe=ev.type==='carmen'?isOnBed(plr):(plr.hiding&&plr.hideAnim>=0.55);
+      if(!safe){
         const sc=plr.side==='s'?'scoreS':'scoreP';
         const newScore=Math.max(0,parseInt(document.getElementById(sc).textContent)-penalty);
         document.getElementById(sc).textContent=newScore;
@@ -761,7 +778,7 @@ function draw(){
     if(eventWarnAge>0&&activeEvent){
       const wt={abv:'⚠  ABV-BEAUFTRAGTER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!'};
       const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)'};
-      const ws={abv:'Schnell ducken! (S)',hausmeister:'Schnell ducken! (S)',carmen:'Schnell ducken! − DOPPELTE STRAFE!',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!'};
+      const ws={abv:'Schnell ducken! (S)',hausmeister:'Schnell ducken! (S)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!'};
       drawWarning(wt[activeEvent.type],wc[activeEvent.type],ws[activeEvent.type]);
     }
     if(state===ST.OVER)drawGameOver();
