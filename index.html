@@ -50,7 +50,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   <span class="pts-p">PREUSSEN: <span id="scoreP">0</span></span>
 </div>
 <canvas id="c" width="720" height="400"></canvas>
-<div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE <svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round" style="width:1.8em;height:1.1em;vertical-align:middle"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg> Werfen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
+<div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE <svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round" style="width:1.8em;height:1.1em;vertical-align:middle"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg> Werfen &nbsp;/&nbsp; Bestätigen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
 <div id="touch-ctrl">
   <div id="tc-left">
     <div class="dpad">
@@ -658,9 +658,9 @@ function drawWappenPreussen(x,y,w,h){
 function drawSplash(){
   blinkT++;
   // Background
-  if(_splashImg){cx.drawImage(_splashImg,0,0,W,H);}
-  else{cx.fillStyle='#0a0e06';cx.fillRect(0,0,W,H);}
-  cx.fillStyle='rgba(0,0,0,0.54)';cx.fillRect(0,0,W,H);
+  cx.fillStyle='#0a0e06';cx.fillRect(0,0,W,H);
+  if(_splashImg){cx.drawImage(_splashImg,0,65,W,H-65);}
+  cx.fillStyle='rgba(0,0,0,0.34)';cx.fillRect(0,65,W,H-65);
   for(let sy=0;sy<H;sy+=2){cx.fillStyle='rgba(0,0,0,0.22)';cx.fillRect(0,sy,W,1);}
   // ZX border
   const zxCols=['#ff0000','#ffff00','#00ffff','#00ff00','#ff00ff','#0000ff'];
@@ -681,22 +681,21 @@ function drawSplash(){
   cx.fillStyle='#a8c878';cx.font='bold 12px "Courier New",monospace';
   cx.fillText('── WÄHLE DEINE SEITE ──',W/2,80);
   // Side cards
-  drawSideCard(130,88,200,150,'s',humanSide==='s');
-  drawSideCard(390,88,200,150,'p',humanSide==='p');
+  drawSideCard(120,148,160,120,'s',humanSide==='s');
+  drawSideCard(440,148,160,120,'p',humanSide==='p');
   // Blinking selection arrow
-  const ax=humanSide==='s'?230:490;
+  const ax=humanSide==='s'?200:520;
   if(Math.floor(blinkT/15)%2===0){
     cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';
     cx.font='16px "Courier New",monospace';cx.fillText('▼',ax,84);
   }
   // Controls hint
-  cx.fillStyle='#000';cx.fillRect(W/2-230,246,460,18);
+  cx.textAlign='center';
+  cx.fillStyle='#000';cx.fillRect(W/2-230,278,460,18);
   cx.fillStyle='#607848';cx.font='11px "Courier New",monospace';
-  cx.fillText('← → Seite wählen    LEERTASTE Starten',W/2,259);
+  cx.fillText('← → Seite wählen    LEERTASTE Starten',W/2,292);
   // Bottom bar
   cx.fillStyle='rgba(0,0,0,0.7)';cx.fillRect(0,H-28,W,28);
-  cx.fillStyle='#c8c8c8';cx.font='10px "Courier New",monospace';
-  cx.fillText('Leertaste für Werfen / Bestätigen',W/2,H-10);
   cx.textAlign='left';
 }
 
@@ -704,7 +703,9 @@ function drawSplash(){
 let blinkT=0;
 function drawSideCard(x,y,w,h,side,sel){
   const ac=side==='s'?'#d4a820':'#909090',bg=side==='s'?'#1a1408':'#101010';
+  cx.shadowColor='rgba(0,0,0,0.7)';cx.shadowBlur=14;cx.shadowOffsetX=4;cx.shadowOffsetY=5;
   rr(x,y,w,h,4,bg,sel?ac:'#304028');
+  cx.shadowColor='transparent';cx.shadowBlur=0;cx.shadowOffsetX=0;cx.shadowOffsetY=0;
   cx.textAlign='center';cx.fillStyle=sel?ac:'#607848';cx.font='bold 20px Courier New';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
   const ww=72,wh=86;const wx=x+w/2-ww/2,wy=y+42;
   if(side==='s')drawWappenSachsen(wx,wy,ww,wh);
