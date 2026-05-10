@@ -161,6 +161,14 @@ cv.addEventListener('touchstart',e=>{
   e.preventDefault();
 },{passive:false});
 
+// Canvas click: select team on splash (desktop mouse)
+cv.addEventListener('click',e=>{
+  if(state!==ST.SPLASH)return;
+  const rect=cv.getBoundingClientRect();
+  const tx=(e.clientX-rect.left)*(W/rect.width);
+  humanSide=tx<W/2?'s':'p';cpuSide=humanSide==='s'?'p':'s';
+});
+
 // ── State ─────────────────────────────────────────────────────────────────
 const ST={SPLASH:'splash',PLAY:'play',OVER:'over'};
 let state=ST.SPLASH,humanSide='s',cpuSide='p',winner='';
