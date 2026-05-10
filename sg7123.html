@@ -181,13 +181,10 @@ function drawRoom(){
 
   drawBed(55,FLOOR,'left','#b89820');drawBed(665,FLOOR,'right','#c8c8c0');
 
-  // Zimmer-Schriftzug
-  cx.font='bold 48px Courier New';cx.textAlign='center';
-  cx.fillStyle='rgba(0,0,0,0.55)';cx.fillText('ZIMMER S',W/4+2,237);
-  cx.fillStyle='rgba(200,160,20,0.88)';cx.fillText('ZIMMER S',W/4,235);
-  cx.fillStyle='rgba(0,0,0,0.55)';cx.fillText('ZIMMER P',3*W/4+2,237);
-  cx.fillStyle='rgba(160,160,155,0.88)';cx.fillText('ZIMMER P',3*W/4,235);
-  cx.textAlign='left';
+  // Wappen an der Wand
+  const ww=80,wh=96;
+  drawWappenSachsen(W/4-ww/2,80,ww,wh);
+  drawWappenPreussen(3*W/4-ww/2,80,ww,wh);
 }
 
 function drawWin(x,y,w,h,cur){
@@ -486,76 +483,26 @@ var _bgImg=null;
 (function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer2.png';})();
 
 // ── Wappen ────────────────────────────────────────────────────────────────
+function _shieldClip(x,y,w,h){
+  cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.65);
+  cx.quadraticCurveTo(x+w,y+h*0.88,x+w/2,y+h);
+  cx.quadraticCurveTo(x,y+h*0.88,x,y+h*0.65);cx.closePath();
+}
 function drawWappenSachsen(x,y,w,h){
-  // Classic Saxon shield: alternating black/gold horizontal bars (Barry of 10), green crancelin diagonal
-  const bars=10;
-  cx.save();
-  // Shield clip (Heater shape)
-  cx.beginPath();
-  cx.moveTo(x,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.65);
-  cx.quadraticCurveTo(x+w,y+h*0.88,x+w/2,y+h);
-  cx.quadraticCurveTo(x,y+h*0.88,x,y+h*0.65);
-  cx.closePath();cx.clip();
-  // Gold base
-  cx.fillStyle='#f5c030';cx.fillRect(x,y,w,h);
-  // Black horizontal bars (5 of them, alternating)
-  const bh=h/bars;
-  for(let b=0;b<bars;b+=2){cx.fillStyle='#1a1a1a';cx.fillRect(x,y+b*bh,w,bh);}
-  // Green crancelin: diagonal strip with wavy edge
-  cx.fillStyle='#2e7d32';
-  cx.beginPath();cx.moveTo(x,y+h*0.25);cx.lineTo(x+w*0.12,y);cx.lineTo(x+w*0.42,y);cx.lineTo(x,y+h*0.55);cx.closePath();cx.fill();
-  cx.beginPath();cx.moveTo(x+w*0.58,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.32);cx.lineTo(x+w*0.88,y+h*0.55);cx.lineTo(x+w,y+h*0.45);cx.lineTo(x+w,y+h*0.68);cx.lineTo(x+w*0.58,y+h);cx.lineTo(x+w*0.28,y+h);cx.lineTo(x+w*0.72,y+h*0.45);cx.lineTo(x+w*0.42,y+h*0.22);cx.lineTo(x+w*0.58,y);cx.closePath();cx.fill();
-  // Outline
-  cx.restore();cx.save();
-  cx.beginPath();
-  cx.moveTo(x,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.65);
-  cx.quadraticCurveTo(x+w,y+h*0.88,x+w/2,y+h);
-  cx.quadraticCurveTo(x,y+h*0.88,x,y+h*0.65);
-  cx.closePath();cx.strokeStyle='#888';cx.lineWidth=1.5;cx.stroke();
-  cx.restore();
+  cx.save();_shieldClip(x,y,w,h);cx.clip();
+  cx.fillStyle='#2a7a2a';cx.fillRect(x,y,w,h);
+  cx.fillStyle='#f5c030';cx.font=`bold ${Math.round(h*0.62)}px serif`;
+  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('S',x+w/2,y+h*0.46);
+  cx.restore();cx.save();_shieldClip(x,y,w,h);
+  cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
 }
 function drawWappenPreussen(x,y,w,h){
-  // Prussian shield: silver/white field, black Hohenzollern eagle
-  cx.save();
-  cx.beginPath();
-  cx.moveTo(x,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.65);
-  cx.quadraticCurveTo(x+w,y+h*0.88,x+w/2,y+h);
-  cx.quadraticCurveTo(x,y+h*0.88,x,y+h*0.65);
-  cx.closePath();cx.clip();
-  cx.fillStyle='#dde0dd';cx.fillRect(x,y,w,h);
-  // Eagle body (simplified heraldic)
-  const ex=x+w/2,ey=y+h*0.46,er=h*0.28;
-  cx.fillStyle='#1a1a1a';
-  cx.beginPath();cx.ellipse(ex,ey,er*0.42,er*0.55,0,0,Math.PI*2);cx.fill();
-  // Wings
-  cx.beginPath();
-  cx.moveTo(ex-er*0.38,ey-er*0.15);cx.bezierCurveTo(ex-er*1.1,ey-er*0.6,ex-er*0.9,ey-er*1.0,ex-er*0.22,ey-er*0.5);
-  cx.bezierCurveTo(ex-er*0.55,ey-er*0.75,ex-er*0.6,ey-er*0.5,ex-er*0.38,ey-er*0.15);
-  cx.fill();
-  cx.beginPath();
-  cx.moveTo(ex+er*0.38,ey-er*0.15);cx.bezierCurveTo(ex+er*1.1,ey-er*0.6,ex+er*0.9,ey-er*1.0,ex+er*0.22,ey-er*0.5);
-  cx.bezierCurveTo(ex+er*0.55,ey-er*0.75,ex+er*0.6,ey-er*0.5,ex+er*0.38,ey-er*0.15);
-  cx.fill();
-  // Tail feathers
-  cx.beginPath();cx.moveTo(ex-er*0.22,ey+er*0.5);cx.lineTo(ex,ey+er*0.95);cx.lineTo(ex+er*0.22,ey+er*0.5);cx.fill();
-  // Head + crown
-  cx.fillStyle='#1a1a1a';cx.beginPath();cx.arc(ex,ey-er*0.65,er*0.22,0,Math.PI*2);cx.fill();
-  // Beak (red)
-  cx.fillStyle='#c0392b';cx.beginPath();cx.moveTo(ex+er*0.12,ey-er*0.6);cx.lineTo(ex+er*0.38,ey-er*0.68);cx.lineTo(ex+er*0.12,ey-er*0.52);cx.closePath();cx.fill();
-  // Crown (gold)
-  cx.fillStyle='#d4a820';
-  cx.beginPath();cx.moveTo(ex-er*0.18,ey-er*0.85);cx.lineTo(ex-er*0.18,ey-er*1.05);cx.lineTo(ex-er*0.07,ey-er*0.95);cx.lineTo(ex,ey-er*1.12);cx.lineTo(ex+er*0.07,ey-er*0.95);cx.lineTo(ex+er*0.18,ey-er*1.05);cx.lineTo(ex+er*0.18,ey-er*0.85);cx.closePath();cx.fill();
-  // Talons (red)
-  cx.fillStyle='#c0392b';
-  cx.beginPath();cx.moveTo(ex-er*0.14,ey+er*0.95);cx.lineTo(ex-er*0.28,ey+er*1.1);cx.lineTo(ex-er*0.06,ey+er*1.05);cx.closePath();cx.fill();
-  cx.beginPath();cx.moveTo(ex+er*0.14,ey+er*0.95);cx.lineTo(ex+er*0.28,ey+er*1.1);cx.lineTo(ex+er*0.06,ey+er*1.05);cx.closePath();cx.fill();
-  cx.restore();cx.save();
-  cx.beginPath();
-  cx.moveTo(x,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.65);
-  cx.quadraticCurveTo(x+w,y+h*0.88,x+w/2,y+h);
-  cx.quadraticCurveTo(x,y+h*0.88,x,y+h*0.65);
-  cx.closePath();cx.strokeStyle='#888';cx.lineWidth=1.5;cx.stroke();
-  cx.restore();
+  cx.save();_shieldClip(x,y,w,h);cx.clip();
+  cx.fillStyle='#e8e8e0';cx.fillRect(x,y,w,h);
+  cx.fillStyle='#1a1a1a';cx.font=`bold ${Math.round(h*0.62)}px serif`;
+  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('P',x+w/2,y+h*0.46);
+  cx.restore();cx.save();_shieldClip(x,y,w,h);
+  cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
 }
 
 // ── Splash Screen ─────────────────────────────────────────────────────────
