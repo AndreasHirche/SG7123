@@ -624,12 +624,6 @@ function drawSplash(){
   const bc=zxCols[Math.floor(blinkT/8)%zxCols.length];
   cx.strokeStyle=bc;cx.lineWidth=6;cx.strokeRect(6,6,W-12,H-12);
   cx.strokeStyle='rgba(0,0,0,0.6)';cx.lineWidth=2;cx.strokeRect(10,10,W-20,H-20);
-  // ZX Spectrum loading stripe bands
-  const stripeH=22;const stripes=['#ffff00','#00ffff','#ff0000','#0000ff','#ff00ff','#00ff00','#ffffff'];
-  for(let s=0;s<stripes.length;s++){
-    cx.fillStyle=stripes[s];cx.globalAlpha=0.18;
-    cx.fillRect(16,16+s*stripeH,W-32,stripeH);
-  }
   cx.globalAlpha=1;
   // Main title block (ZX Spectrum style — bright cyan on black)
   const titleY=H/2-48;
