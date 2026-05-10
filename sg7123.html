@@ -152,6 +152,15 @@ document.addEventListener('touchstart',function fs(){
   document.removeEventListener('touchstart',fs);
 },{once:true,passive:true});
 
+// Canvas tap: select team on splash by tapping left/right half
+cv.addEventListener('touchstart',e=>{
+  if(state!==ST.SPLASH)return;
+  const rect=cv.getBoundingClientRect();
+  const tx=(e.touches[0].clientX-rect.left)*(W/rect.width);
+  humanSide=tx<W/2?'s':'p';cpuSide=humanSide==='s'?'p':'s';
+  e.preventDefault();
+},{passive:false});
+
 // ── State ─────────────────────────────────────────────────────────────────
 const ST={SPLASH:'splash',PLAY:'play',OVER:'over'};
 let state=ST.SPLASH,humanSide='s',cpuSide='p',winner='';
