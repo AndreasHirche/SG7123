@@ -10,8 +10,8 @@ body{background:#0e0e08;display:flex;flex-direction:column;align-items:center;ju
 canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;max-height:60dvh;width:auto;height:auto}
 #hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:5px 14px;background:#0a0a06;border:2px solid #5a4a28;border-bottom:none;border-radius:3px 3px 0 0;font-size:0.78rem;letter-spacing:0.08em}
 #info{max-width:720px;width:100%;padding:3px 14px;background:#0a0a06;border:2px solid #5a4a28;border-top:1px solid #1e1a0e;border-radius:0 0 3px 3px;font-size:0.62rem;color:#6a5e3a;text-align:center;letter-spacing:0.08em}
-.pts-s{color:#c0392b;font-weight:700;font-size:0.82rem}
-.pts-p{color:#2c6a9a;font-weight:700;font-size:0.82rem}
+.pts-s{color:#d4a820;font-weight:700;font-size:0.82rem}
+.pts-p{color:#b0b8b0;font-weight:700;font-size:0.82rem}
 #title-bar{color:#c8b060;font-size:0.72rem;text-align:center;flex:1;letter-spacing:0.15em}
 #touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 10px;justify-content:space-between;align-items:center}
 #tc-left,#tc-right{display:flex;align-items:center;justify-content:center}
@@ -20,17 +20,19 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 .tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
 .dpad .tc{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
-.tc-throw{width:clamp(78px,20vw,106px)!important;height:clamp(78px,20vw,106px)!important;border-radius:50%!important;padding:6px}
+.tc-throw{width:90px!important;height:54px!important;border-radius:0!important;padding:2px;
+  clip-path:path('M 0,0 Q 45,11 90,0 Q 74,27 90,54 Q 45,43 0,54 Q 16,27 0,0 Z')}
 @media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}canvas{max-height:48dvh}body{justify-content:flex-start}}
 @media(pointer:coarse) and (orientation:landscape){
-  body{flex-direction:row;overflow:hidden;align-items:center}
+  body{flex-direction:row;overflow:hidden;align-items:center;justify-content:center}
   #hud{position:absolute;top:0;left:0;right:0;z-index:10;max-width:none;border-radius:0;border-left:none;border-right:none;font-size:0.6rem;padding:2px 8px}
-  canvas{height:calc(100dvh - 28px);width:auto;max-height:calc(100dvh - 28px);max-width:calc(100vw - 200px);border:none;margin-top:28px;flex-shrink:0}
+  canvas{height:calc(100dvh - 28px);width:auto;max-height:calc(100dvh - 28px);max-width:calc(100vw - 240px);border:none;margin-top:28px;flex-shrink:0}
   #touch-ctrl{display:contents!important}
-  #tc-left{display:flex!important;order:-1;width:100px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
-  #tc-right{display:flex!important;order:1;width:100px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
-  .dpad{grid-template-columns:repeat(3,30px)!important;grid-auto-rows:30px!important;gap:3px!important}
-  .tc-throw{width:72px!important;height:72px!important}
+  #tc-left{display:flex!important;order:-1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
+  #tc-right{display:flex!important;order:1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
+  .dpad{grid-template-columns:repeat(3,36px)!important;grid-auto-rows:36px!important;gap:4px!important}
+  .tc-throw{width:76px!important;height:46px!important;
+    clip-path:path('M 0,0 Q 38,9 76,0 Q 62,23 76,46 Q 38,37 0,46 Q 14,23 0,0 Z')!important}
 }
 </style>
 </head>
@@ -51,7 +53,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
     </div>
   </div>
   <div id="tc-right">
-    <button class="tc tc-throw" id="tc-w"><svg viewBox="0 0 50 28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><rect x="3" y="3" width="44" height="22" rx="9"/><line x1="3" y1="14" x2="47" y2="14" stroke-width="2"/></svg></button>
+    <button class="tc tc-throw" id="tc-w"><svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg></button>
   </div>
 </div>
 
@@ -129,10 +131,10 @@ const ST={SPLASH:'splash',SELECT:'select',PLAY:'play',OVER:'over'};
 let state=ST.SPLASH,humanSide='s',cpuSide='p',winner='';
 
 // ── Colors ────────────────────────────────────────────────────────────────
-const C={wallHi:'#d0c9b2',wallLoS:'#7a3a28',wallLoP:'#2a5a7a',ceiling:'#b8b2a0',floor:'#8a6a40',floorDk:'#6a5030',divide:'#282820'};
+const C={wallHi:'#d0c9b2',wallLoS:'#2a2018',wallLoP:'#1e1e1e',ceiling:'#b8b2a0',floor:'#8a6a40',floorDk:'#6a5030',divide:'#282820'};
 const CC={
-  s:  {skin:'#f0c898',hair:'#2a1000',shirt:'#1a4a8a',pants:'#2c3020',tie:'#c0392b'},
-  p:  {skin:'#e8c090',hair:'#180800',shirt:'#1a4a8a',pants:'#303838',tie:'#2c6a9a'},
+  s:  {skin:'#f0c898',hair:'#2a1000',shirt:'#111111',pants:'#1e1e14',tie:'#d4a820'},
+  p:  {skin:'#e8c090',hair:'#180800',shirt:'#e0ddd5',pants:'#111111',tie:'#111111'},
   abv:{skin:'#f0d8b0',hair:'#1e1e1e',shirt:'#7a7a6a',pants:'#5a5a4a'},
   jan:{skin:'#c89060',hair:'#5a3010',shirt:'#2a5a9a',pants:'#1e3a6e'},
   carmen:{skin:'#f0c8a0',hair:'#101010'},
@@ -198,15 +200,15 @@ function drawRoom(){
   drawBanner(365,32,158,'#0a1a2e','#80c8ff',['Oma und Opa sind','für Frieden in Europa'],10,'🕊');
   drawBanner(365,82,158,'#2a1a00','#e8c060',['Den Sozialismus','in seinem Lauf','hält weder Ochs','noch Esel auf'],10,'☭');
   drawWin(75,55,78,88,C.wallLoS);drawWin(568,55,78,88,C.wallLoP);
-  drawBed(55,FLOOR,'left','#8a2a1a');drawBed(665,FLOOR,'right','#1a4a6a');
+  drawBed(55,FLOOR,'left','#b89820');drawBed(665,FLOOR,'right','#c8c8c0');
   drawRadio(200,FLOOR);drawShelf(470,FLOOR-55);
 
   // Zimmer-Schriftzug
   cx.font='bold 48px Courier New';cx.textAlign='center';
   cx.fillStyle='rgba(0,0,0,0.55)';cx.fillText('ZIMMER S',W/4+2,237);
-  cx.fillStyle='rgba(210,75,45,0.88)';cx.fillText('ZIMMER S',W/4,235);
+  cx.fillStyle='rgba(200,160,20,0.88)';cx.fillText('ZIMMER S',W/4,235);
   cx.fillStyle='rgba(0,0,0,0.55)';cx.fillText('ZIMMER P',3*W/4+2,237);
-  cx.fillStyle='rgba(45,100,185,0.88)';cx.fillText('ZIMMER P',3*W/4,235);
+  cx.fillStyle='rgba(160,160,155,0.88)';cx.fillText('ZIMMER P',3*W/4,235);
   cx.textAlign='left';
 }
 
@@ -608,13 +610,13 @@ function drawSelectScreen(){
   cx.fillStyle='#a8c878';cx.font='14px Courier New';cx.fillText('WÄHLE DEINE SEITE:',W/2,128);
   drawSideCard(130,148,200,160,'s',humanSide==='s');drawSideCard(390,148,200,160,'p',humanSide==='p');
   const ax=humanSide==='s'?198:458;
-  if(Math.floor(blinkT/15)%2===0){cx.fillStyle=humanSide==='s'?'#c0392b':'#2c6a9a';cx.font='18px Courier New';cx.fillText('▼',ax,142);}
+  if(Math.floor(blinkT/15)%2===0){cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';cx.font='18px Courier New';cx.fillText('▼',ax,142);}
   cx.fillStyle='#607848';cx.font='12px Courier New';cx.fillText('← → Seite wählen    ENTER / Werfen-Taste Bestätigen',W/2,330);
   cx.fillStyle='#405030';cx.font='10px Courier New';cx.fillText('Gegner: Computerspieler (KI)   |   Ziel: '+WIN_SCORE+' Treffer gewinnt',W/2,352);
   cx.textAlign='left';
 }
 function drawSideCard(x,y,w,h,side,sel){
-  const ac=side==='s'?'#c0392b':'#2c6a9a',bg=side==='s'?'#1a0a06':'#060a14';
+  const ac=side==='s'?'#d4a820':'#909090',bg=side==='s'?'#1a1408':'#101010';
   rr(x,y,w,h,4,bg,sel?ac:'#304028');
   cx.textAlign='center';cx.fillStyle=sel?ac:'#607848';cx.font='bold 20px Courier New';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
   const ww=72,wh=86;const wx=x+w/2-ww/2,wy=y+42;
@@ -719,7 +721,7 @@ function updatePhysics(){
         const ws=plr.side==='s'?'p':'s';
         const newScore=parseInt(document.getElementById(sc).textContent)+pts;
         document.getElementById(sc).textContent=newScore;
-        spawnText(plr.x,plr.y-44,`+${pts}`,ws==='s'?'#c0392b':'#2c6a9a');
+        spawnText(plr.x,plr.y-44,`+${pts}`,ws==='s'?'#d4a820':'#909090');
         plr.hitFlash=20;spawnHit(pil.x,pil.y,10);pillows.splice(i,1);
         if(newScore>=WIN_SCORE){winner=ws;state=ST.OVER;frame=0;}
         break;
