@@ -373,17 +373,6 @@ function drawCarmen(ev){
   px(x-5,y-40,10,12,'#d45040');
   // Head
   cx.fillStyle=cc.skin;cx.beginPath();cx.arc(x,y-47,8,0,Math.PI*2);cx.fill();
-  // Brille
-  const gy=y-46;
-  cx.fillStyle='rgba(160,220,240,0.35)';
-  cx.beginPath();cx.ellipse(x-4,gy,3,2.5,0,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.ellipse(x+4,gy,3,2.5,0,0,Math.PI*2);cx.fill();
-  cx.strokeStyle='#1a0a00';cx.lineWidth=1.5;
-  cx.beginPath();cx.ellipse(x-4,gy,3,2.5,0,0,Math.PI*2);cx.stroke();
-  cx.beginPath();cx.ellipse(x+4,gy,3,2.5,0,0,Math.PI*2);cx.stroke();
-  cx.beginPath();cx.moveTo(x-1,gy);cx.lineTo(x+1,gy);cx.stroke();
-  cx.beginPath();cx.moveTo(x-7,gy);cx.lineTo(x-9,gy-1);cx.stroke();
-  cx.beginPath();cx.moveTo(x+7,gy);cx.lineTo(x+9,gy-1);cx.stroke();
   // Schwarze Haare: 3 Strähnen hinter ihr, eine mit leichtem Bogen nach oben
   cx.fillStyle=cc.hair;cx.beginPath();cx.arc(x,y-49,8,Math.PI,0);cx.fill();
   cx.strokeStyle=cc.hair;cx.lineCap='round';
@@ -420,13 +409,17 @@ function drawTeurich(ev){
   cx.fillStyle=cc.hair;
   for(let h=0;h<7;h++){cx.beginPath();cx.arc(x-11+h*3.5,y-58,4.5,Math.PI,0);cx.fill();}
   cx.fillStyle='#1a0a00';cx.fillRect(x+2,y-53,2,2);cx.fillRect(x-4,y-53,2,2);
-  // Übergroße Hornbrille
-  cx.strokeStyle='#1a0800';cx.lineWidth=2.5;
-  cx.strokeRect(x-11,y-58,10,8);cx.strokeRect(x+1,y-58,10,8);
-  cx.beginPath();cx.moveTo(x-1,y-54);cx.lineTo(x+1,y-54);cx.stroke();
-  cx.beginPath();cx.moveTo(x-11,y-54);cx.lineTo(x-15,y-52);cx.stroke();
-  cx.beginPath();cx.moveTo(x+11,y-54);cx.lineTo(x+15,y-52);cx.stroke();
-  cx.fillStyle='rgba(10,5,40,0.25)';cx.fillRect(x-10,y-57,9,6);cx.fillRect(x+2,y-57,9,6);
+  // Übergroße rote Brille
+  cx.fillStyle='rgba(220,30,10,0.18)';
+  cx.beginPath();cx.ellipse(x-8,y-52,7.5,6,0,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.ellipse(x+8,y-52,7.5,6,0,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='#cc1500';cx.lineWidth=3.5;
+  cx.beginPath();cx.ellipse(x-8,y-52,7.5,6,0,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.ellipse(x+8,y-52,7.5,6,0,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.moveTo(x-0.5,y-52);cx.lineTo(x+0.5,y-52);cx.stroke();
+  cx.lineWidth=2.5;
+  cx.beginPath();cx.moveTo(x-15.5,y-52);cx.lineTo(x-19,y-50);cx.stroke();
+  cx.beginPath();cx.moveTo(x+15.5,y-52);cx.lineTo(x+19,y-50);cx.stroke();
   // Böser Blick - eyebrows
   cx.strokeStyle='#1a0a00';cx.lineWidth=1.5;
   cx.beginPath();cx.moveTo(x-7,y-57);cx.lineTo(x-2,y-56);cx.stroke();
