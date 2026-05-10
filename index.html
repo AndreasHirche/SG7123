@@ -186,10 +186,11 @@ function drawRoom(){
   cx.strokeStyle='rgba(0,0,0,0.07)';cx.lineWidth=1;
   for(let fx=0;fx<W;fx+=40){cx.beginPath();cx.moveTo(fx,FLOOR);cx.lineTo(fx,H);cx.stroke();}
 
-  drawBanner(0,18,W/2,'#8b0000','#ffd700',['Free Nelson Mandela!'],22);
-  drawBanner(0,144,W/2,'#1a3a08','#a8f060',['Vorwärts immer,','rückwärts nimmer!'],19);
-  drawBanner(W/2,18,W/2,'#0a1a2e','#80c8ff',['Oma und Opa sind','für Frieden in Europa'],19);
-  drawBanner(W/2,144,W/2,'#2a1a00','#e8c060',['Den Sozialismus in seinem Lauf','hält weder Ochs noch Esel auf'],17);
+  // Plakate neben Fenstern
+  drawBanner(157,30,196,'#8b0000','#ffd700',['Free Nelson Mandela!'],15);
+  drawBanner(157,72,196,'#1a3a08','#a8f060',['Vorwärts immer,','rückwärts nimmer!'],14);
+  drawBanner(365,30,196,'#0a1a2e','#80c8ff',['Oma und Opa sind','für Frieden in Europa'],14);
+  drawBanner(365,90,196,'#2a1a00','#e8c060',['Den Sozialismus','in seinem Lauf','hält weder Ochs','noch Esel auf'],13);
   drawWin(75,55,78,88,C.wallLoS);drawWin(568,55,78,88,C.wallLoP);
   drawBed(55,FLOOR,'left','#8a2a1a');drawBed(665,FLOOR,'right','#1a4a6a');
   drawRadio(200,FLOOR);drawShelf(470,FLOOR-55);
@@ -220,11 +221,13 @@ function drawBed(x,y,side,col){
   px(side==='left'?bx:bx+w-8,y-h-20,8,26,'#4a4030');
 }
 function drawBanner(x,y,w,bg,tc,lines,fs){
-  const lh=Math.ceil(fs*1.3);const h=lines.length*lh+10;
+  const lh=Math.ceil(fs*1.3);const h=lines.length*lh+12;
+  cx.fillStyle='rgba(0,0,0,0.35)';cx.fillRect(x+3,y+3,w,h);
   cx.fillStyle=bg;cx.fillRect(x,y,w,h);
-  cx.strokeStyle='rgba(0,0,0,0.5)';cx.lineWidth=1.5;cx.strokeRect(x,y,w,h);
+  cx.strokeStyle='rgba(255,255,255,0.2)';cx.lineWidth=1.5;cx.strokeRect(x+3,y+3,w-6,h-6);
+  cx.strokeStyle='rgba(0,0,0,0.6)';cx.lineWidth=1;cx.strokeRect(x,y,w,h);
   cx.fillStyle=tc;cx.font=`bold ${fs}px 'Courier New',monospace`;cx.textAlign='center';
-  lines.forEach((l,i)=>cx.fillText(l,x+w/2,y+fs+4+i*lh));
+  lines.forEach((l,i)=>cx.fillText(l,x+w/2,y+fs+5+i*lh));
   cx.textAlign='left';
 }
 function drawRadio(x,y){
