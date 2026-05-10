@@ -13,19 +13,24 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 .pts-s{color:#c0392b;font-weight:700;font-size:0.82rem}
 .pts-p{color:#2c6a9a;font-weight:700;font-size:0.82rem}
 #title-bar{color:#c8b060;font-size:0.72rem;text-align:center;flex:1;letter-spacing:0.15em}
-#touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 6px;gap:6px;justify-content:space-between}
-#tc-move,#tc-act{display:flex;gap:6px;align-items:center}
-.tc{flex:none;width:clamp(58px,16vw,88px);height:clamp(58px,16vw,88px);background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
+#touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 10px;justify-content:space-between;align-items:center}
+#tc-left,#tc-right{display:flex;align-items:center;justify-content:center}
+.dpad{display:grid;grid-template-columns:repeat(3,clamp(44px,11vw,56px));grid-auto-rows:clamp(44px,11vw,56px);gap:3px}
+.dpad>span{display:block}
+.tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
+.dpad .tc{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
-@media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}}
+.tc-throw{width:clamp(78px,20vw,106px)!important;height:clamp(78px,20vw,106px)!important;border-radius:50%!important;padding:6px}
+@media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}canvas{max-height:48dvh}body{justify-content:flex-start}}
 @media(pointer:coarse) and (orientation:landscape){
   body{flex-direction:row;overflow:hidden;align-items:center}
   #hud{position:absolute;top:0;left:0;right:0;z-index:10;max-width:none;border-radius:0;border-left:none;border-right:none;font-size:0.6rem;padding:2px 8px}
-  canvas{height:calc(100dvh - 28px);width:auto;max-height:calc(100dvh - 28px);max-width:calc(100vw - 158px);border:none;margin-top:28px;flex-shrink:0}
+  canvas{height:calc(100dvh - 28px);width:auto;max-height:calc(100dvh - 28px);max-width:calc(100vw - 200px);border:none;margin-top:28px;flex-shrink:0}
   #touch-ctrl{display:contents!important}
-  #tc-move{display:flex!important;flex-direction:column;gap:8px;width:72px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0;order:-1}
-  #tc-act{display:flex!important;flex-direction:column;gap:6px;width:86px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0;order:1}
-  .tc{width:64px;height:clamp(44px,11dvh,66px);font-size:0.72rem;border-radius:10px}
+  #tc-left{display:flex!important;order:-1;width:100px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
+  #tc-right{display:flex!important;order:1;width:100px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
+  .dpad{grid-template-columns:repeat(3,30px)!important;grid-auto-rows:30px!important;gap:3px!important}
+  .tc-throw{width:72px!important;height:72px!important}
 }
 </style>
 </head>
@@ -38,14 +43,15 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 <canvas id="c" width="720" height="400"></canvas>
 <div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE Werfen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
 <div id="touch-ctrl">
-  <div id="tc-move">
-    <button class="tc" id="tc-l">←</button>
-    <button class="tc" id="tc-r">→</button>
+  <div id="tc-left">
+    <div class="dpad">
+      <span></span><button class="tc" id="tc-up">↑</button><span></span>
+      <button class="tc" id="tc-l">←</button><span></span><button class="tc" id="tc-r">→</button>
+      <span></span><button class="tc" id="tc-s">↓</button><span></span>
+    </div>
   </div>
-  <div id="tc-act">
-    <button class="tc" id="tc-up">↑</button>
-    <button class="tc" id="tc-w">Werfen</button>
-    <button class="tc" id="tc-s">↓</button>
+  <div id="tc-right">
+    <button class="tc tc-throw" id="tc-w"><svg viewBox="0 0 50 28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><rect x="3" y="3" width="44" height="22" rx="9"/><line x1="3" y1="14" x2="47" y2="14" stroke-width="2"/></svg></button>
   </div>
 </div>
 
@@ -187,10 +193,10 @@ function drawRoom(){
   for(let fx=0;fx<W;fx+=40){cx.beginPath();cx.moveTo(fx,FLOOR);cx.lineTo(fx,H);cx.stroke();}
 
   // Plakate neben Fenstern
-  drawBanner(157,30,196,'#8b0000','#ffd700',['Free Nelson Mandela!'],15);
-  drawBanner(157,72,196,'#1a3a08','#a8f060',['Vorwärts immer,','rückwärts nimmer!'],14);
-  drawBanner(365,30,196,'#0a1a2e','#80c8ff',['Oma und Opa sind','für Frieden in Europa'],14);
-  drawBanner(365,90,196,'#2a1a00','#e8c060',['Den Sozialismus','in seinem Lauf','hält weder Ochs','noch Esel auf'],13);
+  drawBanner(157,32,158,'#8b0000','#ffd700',['Free Nelson Mandela!'],11,'✊');
+  drawBanner(157,72,158,'#1a3a08','#a8f060',['Vorwärts immer,','rückwärts nimmer!'],10,'⚡');
+  drawBanner(365,32,158,'#0a1a2e','#80c8ff',['Oma und Opa sind','für Frieden in Europa'],10,'🕊');
+  drawBanner(365,82,158,'#2a1a00','#e8c060',['Den Sozialismus','in seinem Lauf','hält weder Ochs','noch Esel auf'],10,'☭');
   drawWin(75,55,78,88,C.wallLoS);drawWin(568,55,78,88,C.wallLoP);
   drawBed(55,FLOOR,'left','#8a2a1a');drawBed(665,FLOOR,'right','#1a4a6a');
   drawRadio(200,FLOOR);drawShelf(470,FLOOR-55);
@@ -220,14 +226,15 @@ function drawBed(x,y,side,col){
   rr(bx+6,y-h+4,30,18,2,'#e8e0cc','#b0a890');rr(bx+40,y-h+6,w-46,h-10,2,col,null);
   px(side==='left'?bx:bx+w-8,y-h-20,8,26,'#4a4030');
 }
-function drawBanner(x,y,w,bg,tc,lines,fs){
-  const lh=Math.ceil(fs*1.3);const h=lines.length*lh+12;
+function drawBanner(x,y,w,bg,tc,lines,fs,icon){
+  const lh=Math.ceil(fs*1.3);const iconH=icon?16:0;const h=lines.length*lh+10+iconH;
   cx.fillStyle='rgba(0,0,0,0.35)';cx.fillRect(x+3,y+3,w,h);
   cx.fillStyle=bg;cx.fillRect(x,y,w,h);
   cx.strokeStyle='rgba(255,255,255,0.2)';cx.lineWidth=1.5;cx.strokeRect(x+3,y+3,w-6,h-6);
   cx.strokeStyle='rgba(0,0,0,0.6)';cx.lineWidth=1;cx.strokeRect(x,y,w,h);
+  if(icon){cx.font='13px serif';cx.textAlign='center';cx.fillText(icon,x+w/2,y+14);}
   cx.fillStyle=tc;cx.font=`bold ${fs}px 'Courier New',monospace`;cx.textAlign='center';
-  lines.forEach((l,i)=>cx.fillText(l,x+w/2,y+fs+5+i*lh));
+  lines.forEach((l,i)=>cx.fillText(l,x+w/2,y+iconH+fs+4+i*lh));
   cx.textAlign='left';
 }
 function drawRadio(x,y){
