@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Leninplatz 1987</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%230e0e08'/><text x='32' y='44' font-family='monospace' font-size='13' font-weight='bold' fill='%23c8b060' text-anchor='middle'>SG7123</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0e0e08;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;font-family:'Courier New',monospace;color:#d4c89a;overflow:hidden;user-select:none;touch-action:none}
@@ -608,7 +609,7 @@ function drawSelectScreen(){
   drawSideCard(130,148,200,160,'s',humanSide==='s');drawSideCard(390,148,200,160,'p',humanSide==='p');
   const ax=humanSide==='s'?198:458;
   if(Math.floor(blinkT/15)%2===0){cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';cx.font='18px Courier New';cx.fillText('▼',ax,142);}
-  cx.fillStyle='#607848';cx.font='12px Courier New';cx.fillText('← → Seite wählen    ENTER / Werfen-Taste Bestätigen',W/2,330);
+  cx.fillStyle='#607848';cx.font='12px Courier New';cx.fillText('← → Seite wählen    LEERTASTE Bestätigen',W/2,330);
   cx.fillStyle='#405030';cx.font='10px Courier New';cx.fillText('Gegner: Computerspieler (KI)   |   Ziel: '+WIN_SCORE+' Treffer gewinnt',W/2,352);
   cx.textAlign='left';
 }
@@ -634,7 +635,7 @@ function drawGameOver(){
   const sS=parseInt(document.getElementById('scoreS').textContent);
   const sP=parseInt(document.getElementById('scoreP').textContent);
   cx.font='13px Courier New';cx.fillStyle='#6a8040';cx.fillText(`Sachsen: ${sS}   |   Preußen: ${sP}`,W/2,214);
-  if(Math.floor(frame/20)%2===0){cx.fillStyle='#485030';cx.font='11px Courier New';cx.fillText('[ ENTER oder WERFEN-Taste für neues Spiel ]',W/2,270);}
+  if(Math.floor(frame/20)%2===0){cx.fillStyle='#485030';cx.font='11px Courier New';cx.fillText('[ LEERTASTE oder WERFEN-Taste für neues Spiel ]',W/2,270);}
   cx.textAlign='left';
 }
 
