@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
 <title>Leninplatz 1987</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%23cc1500'/><text x='32' y='46' font-family='monospace' font-size='28' font-weight='bold' fill='%23ffd700' text-anchor='middle'>LP</text></svg>">
 <style>
@@ -129,6 +133,14 @@ document.addEventListener('keyup',e=>K[e.code]=false);
   btn.addEventListener('touchend',e=>{K[code]=false;btn.classList.remove('on');if(state===ST.SELECT&&id==='tc-w'){startGame();}e.preventDefault();},{passive:false});
 });
 
+// Fullscreen on first touch (Android Chrome)
+document.addEventListener('touchstart',function fs(){
+  const el=document.documentElement;
+  if(el.requestFullscreen)el.requestFullscreen({navigationUI:'hide'}).catch(()=>{});
+  else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+  document.removeEventListener('touchstart',fs);
+},{once:true,passive:true});
+
 // ── State ─────────────────────────────────────────────────────────────────
 const ST={SPLASH:'splash',SELECT:'select',PLAY:'play',OVER:'over'};
 let state=ST.SPLASH,humanSide='s',cpuSide='p',winner='';
@@ -184,8 +196,8 @@ function drawRoom(){
 
   // Wappen an der Wand
   const ww=80,wh=96;
-  drawWappenSachsen(W/4-ww/2+24,80,ww,wh);
-  drawWappenPreussen(3*W/4-ww/2,80,ww,wh);
+  drawWappenSachsen(W/4-ww/2+64,80,ww,wh);
+  drawWappenPreussen(3*W/4-ww/2-56,80,ww,wh);
 }
 
 function drawWin(x,y,w,h,cur){
@@ -201,24 +213,31 @@ function drawWin(x,y,w,h,cur){
 function drawBed(x,y,side,col){
   const w=108,h=32,bx=side==='left'?x:x-w;
   const hbx=side==='left'?bx:bx+w-8;
+  const fbx=side==='left'?bx+w-8:bx;
+  const legH=10;
   cx.imageSmoothingEnabled=false;
-  // headboard
-  cx.fillStyle='#181410';cx.fillRect(hbx,y-h-22,8,28);
-  cx.fillStyle='#2c2618';cx.fillRect(hbx+2,y-h-20,4,22);
-  // frame
-  cx.fillStyle='#1a1410';cx.fillRect(bx,y-h,w,h);
-  // mattress
-  cx.fillStyle='#d8d0b0';cx.fillRect(bx+2,y-h+2,w-4,h-4);
-  // blanket (colored)
-  cx.fillStyle=col;cx.fillRect(bx+2,y-h+12,w-4,h-14);
-  // pillow near headboard
-  const px2=side==='left'?bx+4:bx+w-30;
-  cx.fillStyle='#f0ece0';cx.fillRect(px2,y-h+3,26,10);
-  cx.fillStyle='rgba(0,0,0,0.12)';cx.fillRect(px2,y-h+12,26,1);
-  // outlines
-  cx.strokeStyle='#080808';cx.lineWidth=2;
-  cx.strokeRect(hbx,y-h-22,8,28);
-  cx.strokeRect(bx,y-h,w,h);
+  // headboard – gray, no stroke
+  cx.fillStyle='#606060';cx.fillRect(hbx,y-h-28,8,34);
+  cx.fillStyle='#787878';cx.fillRect(hbx+1,y-h-26,6,26);
+  // footboard – gray, no stroke
+  cx.fillStyle='#606060';cx.fillRect(fbx,y-h-16,8,22);
+  cx.fillStyle='#787878';cx.fillRect(fbx+1,y-h-14,6,14);
+  // gray frame body (full height)
+  cx.fillStyle='#707070';cx.fillRect(bx,y-h,w,h);
+  // darker legs at bottom corners
+  cx.fillStyle='#484848';
+  cx.fillRect(bx,y-legH,8,legH);
+  cx.fillRect(bx+w-8,y-legH,8,legH);
+  // mattress – flying pillow color, ends above leg area
+  cx.fillStyle='#e8e0ca';cx.fillRect(bx+2,y-h+2,w-4,h-legH-3);
+  // blanket fold
+  cx.fillStyle='#d4ccb0';cx.fillRect(bx+2,y-h+13,w-4,h-legH-14);
+  cx.strokeStyle='#c0b898';cx.lineWidth=1;
+  cx.beginPath();cx.moveTo(bx+2,y-h+13);cx.lineTo(bx+w-2,y-h+13);cx.stroke();
+  // pillow – flying pillow color
+  const px2=side==='left'?bx+10:bx+w-36;
+  cx.fillStyle='#e8e0ca';cx.fillRect(px2,y-h+3,26,11);
+  cx.strokeStyle='#c0b898';cx.lineWidth=1;cx.strokeRect(px2,y-h+3,26,11);
   cx.imageSmoothingEnabled=true;
 }
 function drawBanner(x,y,w,bg,tc,lines,fs,icon){
@@ -330,25 +349,30 @@ function drawABV(ev){
 }
 
 function drawHausmeister(ev){
-  const x=ev.x,y=FLOOR,cc=CC.jan;
-  cx.save();cx.globalAlpha=ev.phase==='enter'?Math.min(1,ev.progress*5):Math.max(0,1-(ev.progress-0.65)*4);
-  px(x-5,y-16,7,16,cc.pants);px(x+2,y-16,7,16,cc.pants);
-  cx.fillStyle='#1a1010';cx.beginPath();cx.roundRect(x-6,y-3,8,4,1);cx.fill();
-  cx.fillStyle='#1a1010';cx.beginPath();cx.roundRect(x+2,y-3,8,4,1);cx.fill();
-  px(x-8,y-40,16,26,cc.shirt); // blauer Kittel
-  cx.fillStyle='rgba(20,40,100,0.4)';cx.fillRect(x-9,y-40,18,26); // Kittelüberwurf
-  // Flasche – größer und besser erkennbar
-  cx.fillStyle='#3a8020';cx.fillRect(x+9,y-46,10,28); // Körper
-  cx.fillStyle='#2a5c14';cx.fillRect(x+9,y-46,10,28);
-  cx.fillStyle='#5ab030';cx.fillRect(x+9,y-46,10,28);
-  cx.fillStyle='#d0e060';cx.fillRect(x+10,y-43,8,18); // Etikett
-  cx.fillStyle='#2a1000';cx.font='bold 5px Courier New';cx.textAlign='center';cx.fillText('BIER',x+14,y-33);
-  cx.fillStyle='#8ab030';cx.fillRect(x+10,y-52,8,8); // Hals
-  cx.fillStyle='#c0c060';cx.fillRect(x+11,y-54,6,4); // Kronkorken
-  cx.fillStyle='rgba(220,255,80,0.3)';cx.fillRect(x+10,y-43,8,20); // Lichtreflex
-  cx.fillStyle=cc.skin;cx.beginPath();cx.arc(x,y-47,8,0,Math.PI*2);cx.fill();
-  cx.fillStyle=cc.hair;cx.beginPath();cx.arc(x,y-49,7,Math.PI,0);cx.fill();
-  px(x-9,y-55,18,4,'#2a5a9a');px(x-7,y-62,14,9,'#2a5a9a');
+  const cc=CC.jan;
+  const alpha=ev.phase==='enter'?Math.min(1,ev.progress*5):Math.max(0,1-(ev.progress-0.65)*4);
+  const sway=Math.sin(frame*0.09)*10;
+  const lean=Math.sin(frame*0.09)*0.16;
+  cx.save();cx.globalAlpha=alpha;
+  cx.translate(ev.x+sway,FLOOR);cx.rotate(lean);
+  // legs
+  px(-5,-16,7,16,cc.pants);px(2,-16,7,16,cc.pants);
+  cx.fillStyle='#1a1010';cx.beginPath();cx.roundRect(-6,-3,8,4,1);cx.fill();
+  cx.fillStyle='#1a1010';cx.beginPath();cx.roundRect(2,-3,8,4,1);cx.fill();
+  // shirt + kittel
+  px(-8,-40,16,26,cc.shirt);
+  cx.fillStyle='rgba(20,40,100,0.4)';cx.fillRect(-9,-40,18,26);
+  // Flasche
+  cx.fillStyle='#5ab030';cx.fillRect(9,-46,10,28);
+  cx.fillStyle='#d0e060';cx.fillRect(10,-43,8,18);
+  cx.fillStyle='#2a1000';cx.font='bold 5px Courier New';cx.textAlign='center';cx.fillText('BIER',14,-33);
+  cx.fillStyle='#8ab030';cx.fillRect(10,-52,8,8);
+  cx.fillStyle='#c0c060';cx.fillRect(11,-54,6,4);
+  cx.fillStyle='rgba(220,255,80,0.3)';cx.fillRect(10,-43,8,20);
+  // Kopf
+  cx.fillStyle=cc.skin;cx.beginPath();cx.arc(0,-47,8,0,Math.PI*2);cx.fill();
+  cx.fillStyle=cc.hair;cx.beginPath();cx.arc(0,-49,7,Math.PI,0);cx.fill();
+  px(-9,-55,18,4,'#2a5a9a');px(-7,-62,14,9,'#2a5a9a');
   cx.textAlign='left';cx.restore();
 }
 
@@ -429,6 +453,102 @@ function drawTeurich(ev){
   px(x-18,y-36,36,12,'#e8e0d0');rr(x-18,y-36,36,12,1,null,'#aaa');
   cx.fillStyle='#2a1a0a';cx.font='bold 5px Courier New';cx.textAlign='center';cx.fillText('HEIMLEITUNG',x,y-27);
   cx.textAlign='left';cx.restore();
+}
+
+function drawWinkler(ev){
+  const x=ev.x,y=FLOOR;
+  const alpha=ev.phase==='enter'?Math.min(1,ev.progress*4):Math.max(0,1-(ev.progress-0.6)*4);
+  cx.save();cx.globalAlpha=alpha;
+  cx.translate(x,0);cx.scale(ev.dir,1);
+  const step=Math.sin(frame*0.18)*5;
+  // Enge Hosen – thin tapering legs
+  cx.fillStyle='#3a3060';
+  cx.beginPath();cx.moveTo(-7+step,y);cx.lineTo(-9+step,y-24);cx.lineTo(-2+step,y-24);cx.lineTo(-1+step,y);cx.closePath();cx.fill();
+  cx.fillStyle='#3a3060';
+  cx.beginPath();cx.moveTo(7-step,y);cx.lineTo(9-step,y-24);cx.lineTo(2-step,y-24);cx.lineTo(1-step,y);cx.closePath();cx.fill();
+  cx.fillStyle='#1a1020';cx.fillRect(-10+step,y-3,9,5);cx.fillRect(1-step,y-3,9,5);
+  // Slender shirt
+  px(0-10,y-44,20,22,'#c8c0b8');
+  // Left arm hanging
+  cx.fillStyle='#c8c0b8';
+  cx.beginPath();cx.moveTo(-10,y-42);cx.lineTo(-14,y-26);cx.lineTo(-11,y-26);cx.lineTo(-8,y-42);cx.closePath();cx.fill();
+  cx.fillStyle='#d4a880';cx.fillRect(-15,y-28,5,6);
+  // Right arm raised – waving arm (leading side)
+  cx.fillStyle='#c8c0b8';
+  cx.beginPath();cx.moveTo(8,y-42);cx.lineTo(13,y-36);cx.lineTo(11,y-34);cx.lineTo(7,y-40);cx.closePath();cx.fill();
+  // Forearm pointing up
+  cx.fillStyle='#c8c0b8';cx.fillRect(10,y-50,5,16);
+  // Flat hand wave – wrist rotates top-to-bottom
+  const wwave=Math.sin(frame*0.2)*0.65;
+  cx.save();cx.translate(12,y-51);cx.rotate(wwave);
+  cx.fillStyle='#d4a880';cx.fillRect(-11,-2,22,4);
+  cx.strokeStyle='#b08060';cx.lineWidth=0.8;cx.strokeRect(-11,-2,22,4);
+  cx.restore();
+  // Kopf
+  cx.fillStyle='#d4a880';cx.beginPath();cx.arc(0,y-52,9,0,Math.PI*2);cx.fill();
+  // Haarkranz über den Ohren (two temple patches at sides)
+  cx.strokeStyle='#9a9a9a';cx.lineWidth=5;cx.lineCap='round';
+  cx.beginPath();cx.arc(0,y-52,10.5,-Math.PI*0.32,Math.PI*0.12);cx.stroke();
+  cx.beginPath();cx.arc(0,y-52,10.5,Math.PI*0.88,Math.PI*1.32);cx.stroke();
+  // Eyes (facing right = left eye at -3, right eye at +2)
+  cx.fillStyle='#1a1010';cx.fillRect(-4,y-54,2,2);cx.fillRect(2,y-54,2,2);
+  cx.restore();
+}
+
+function drawHancke(ev){
+  const x=ev.x,y=FLOOR;
+  const alpha=ev.phase==='enter'?Math.min(1,ev.progress*4):Math.max(0,1-(ev.progress-0.6)*4);
+  cx.save();cx.globalAlpha=alpha;
+  cx.translate(x,0);cx.scale(ev.dir,1);
+  const step=Math.sin(frame*0.12)*4;
+  // Wide legs
+  cx.fillStyle='#2a2820';
+  cx.beginPath();cx.moveTo(-16+step,y);cx.lineTo(-18+step,y-22);cx.lineTo(-4+step,y-22);cx.lineTo(-2+step,y);cx.closePath();cx.fill();
+  cx.fillStyle='#2a2820';
+  cx.beginPath();cx.moveTo(16-step,y);cx.lineTo(18-step,y-22);cx.lineTo(4-step,y-22);cx.lineTo(2-step,y);cx.closePath();cx.fill();
+  cx.fillStyle='#0a0808';cx.fillRect(-19+step,y-3,15,5);cx.fillRect(4-step,y-3,15,5);
+  // Barrel torso
+  cx.fillStyle='#445060';cx.beginPath();cx.ellipse(0,y-38,17,19,0,0,Math.PI*2);cx.fill();
+  // Very thick belly protruding forward (positive x = walking direction after scale)
+  cx.fillStyle='#3a4452';cx.beginPath();cx.ellipse(8,y-30,14,13,0.2,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='#2a3040';cx.lineWidth=1;cx.stroke();
+  // Shoulders
+  cx.fillStyle='#445060';cx.beginPath();cx.ellipse(-18,y-46,7,6,0,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.ellipse(18,y-46,7,6,0,0,Math.PI*2);cx.fill();
+  // Arms
+  cx.fillStyle='#445060';cx.fillRect(-24,y-48,8,22);cx.fillRect(16,y-48,8,22);
+  cx.fillStyle='#c09878';cx.fillRect(-24,y-28,8,8);cx.fillRect(16,y-28,8,8);
+  // Glatze
+  cx.fillStyle='#c09878';cx.beginPath();cx.arc(0,y-56,13,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='#a07860';cx.lineWidth=1;cx.stroke();
+  // Eyes
+  cx.fillStyle='#1a0808';cx.fillRect(-5,y-59,2,2);cx.fillRect(3,y-59,2,2);
+  // Donatbart – runder brauner Kranz um den Mund
+  cx.strokeStyle='#7a3808';cx.lineWidth=5.5;cx.lineCap='round';
+  cx.beginPath();cx.arc(0,y-50,6,0,Math.PI*2);cx.stroke();
+  cx.strokeStyle='#5a2604';cx.lineWidth=2;
+  cx.beginPath();cx.arc(0,y-50,6,0,Math.PI*2);cx.stroke();
+  // Übergroße schwarze Hornbrille
+  cx.strokeStyle='#0a0808';cx.lineWidth=4;
+  cx.beginPath();cx.rect(-14,y-62,12,9);cx.stroke();
+  cx.beginPath();cx.rect(2,y-62,12,9);cx.stroke();
+  cx.lineWidth=3;cx.beginPath();cx.moveTo(-2,y-57.5);cx.lineTo(2,y-57.5);cx.stroke();
+  cx.lineWidth=2;
+  cx.beginPath();cx.moveTo(-20,y-57.5);cx.lineTo(-14,y-57.5);cx.stroke();
+  cx.beginPath();cx.moveTo(14,y-57.5);cx.lineTo(20,y-57.5);cx.stroke();
+  // Dampfwolken über Kopf (position in world coords, not flipped)
+  cx.restore();cx.save();cx.globalAlpha=alpha;
+  for(let p=0;p<3;p++){
+    const age=((frame*0.018+p*0.33)%1);
+    const pofs=(ev.dir===1?-4:4)+p*4*ev.dir;
+    const py2=y-70-age*30;
+    const pr=3+age*4;
+    const pa=(age<0.15?age/0.15:age>0.7?(1-age)/0.3:1)*0.48;
+    cx.save();cx.globalAlpha=cx.globalAlpha*pa;
+    cx.fillStyle='#d0d0d0';cx.beginPath();cx.arc(x+pofs,py2,pr,0,Math.PI*2);cx.fill();
+    cx.restore();
+  }
+  cx.restore();
 }
 
 // ── Flood & Pillow ────────────────────────────────────────────────────────
@@ -521,12 +641,6 @@ function drawSplash(){
   const bc=zxCols[Math.floor(blinkT/8)%zxCols.length];
   cx.strokeStyle=bc;cx.lineWidth=6;cx.strokeRect(6,6,W-12,H-12);
   cx.strokeStyle='rgba(0,0,0,0.6)';cx.lineWidth=2;cx.strokeRect(10,10,W-20,H-20);
-  // ZX Spectrum loading stripe bands
-  const stripeH=22;const stripes=['#ffff00','#00ffff','#ff0000','#0000ff','#ff00ff','#00ff00','#ffffff'];
-  for(let s=0;s<stripes.length;s++){
-    cx.fillStyle=stripes[s];cx.globalAlpha=0.18;
-    cx.fillRect(16,16+s*stripeH,W-32,stripeH);
-  }
   cx.globalAlpha=1;
   // Main title block (ZX Spectrum style — bright cyan on black)
   const titleY=H/2-48;
@@ -685,23 +799,24 @@ function updatePhysics(){
 function updateEvent(){
   nextEvent--;
   if(!activeEvent&&nextEvent<=0){
-    const types=['abv','hausmeister','carmen','teurich'];
+    const types=['abv','hausmeister','carmen','teurich','winkler','hancke'];
     const t=types[~~(Math.random()*types.length)];
-    activeEvent={type:t,progress:0,phase:'enter',x:t==='carmen'?W+50:-60,dir:t==='carmen'?-1:1,floodY:0};
+    const fromRight=t==='carmen'||(t==='winkler'||t==='hancke')&&Math.random()>0.5;
+    activeEvent={type:t,progress:0,phase:'enter',x:fromRight?W+50:-60,dir:fromRight?-1:1,floodY:0};
     nextEvent=450+Math.random()*550;eventWarnAge=110;
-    playSound(t==='teurich'?'teurich':t==='abv'?'abv':t==='hausmeister'?'hausmeister':'carmen');
+    playSound(t==='teurich'?'teurich':t==='abv'?'abv':t==='hausmeister'?'hausmeister':t==='winkler'||t==='hancke'?'hausmeister':'carmen');
   }
   if(eventWarnAge>0)eventWarnAge--;
   if(!activeEvent)return;
   const ev=activeEvent;
   ev.progress=Math.min(1,ev.progress+0.003);
-  const spd=ev.type==='carmen'?4.8:ev.type==='teurich'?1.5:2.4;
+  const spd=ev.type==='carmen'?4.8:ev.type==='teurich'?1.5:ev.type==='hancke'?1.8:2.4;
   ev.x+=ev.dir*spd*(ev.phase==='exit'?1.6:1);
   if(ev.phase==='enter'&&ev.progress>0.42)ev.phase='patrol';
   if(ev.phase==='patrol'&&ev.progress>0.68)ev.phase='exit';
   if(ev.type==='carmen'&&ev.phase==='patrol'){ev.floodY=Math.min(1,ev.floodY+0.01);floodLevel=ev.floodY;}
   if(ev.phase==='exit'&&(ev.x<-100||ev.x>W+100)){
-    const penalty=ev.type==='teurich'?10:5;
+    const penalty=ev.type==='teurich'?10:ev.type==='hancke'?8:5;
     for(const plr of Object.values(players)){
       const safe=ev.type==='carmen'?isOnBed(plr):(plr.hiding&&plr.hideAnim>=0.55);
       if(!safe){
@@ -738,14 +853,16 @@ function draw(){
       if(activeEvent.type==='abv')drawABV(activeEvent);
       else if(activeEvent.type==='hausmeister')drawHausmeister(activeEvent);
       else if(activeEvent.type==='carmen')drawCarmen(activeEvent);
+      else if(activeEvent.type==='winkler')drawWinkler(activeEvent);
+      else if(activeEvent.type==='hancke')drawHancke(activeEvent);
       else drawTeurich(activeEvent);
     }
     drawFlood();drawParticles();
     for(const plr of Object.values(players))drawHideBar(plr);
     if(eventWarnAge>0&&activeEvent){
-      const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!'};
-      const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)'};
-      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!'};
+      const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!',winkler:'⚠  HERR WINKLER!',hancke:'⚠  HERR HANCKE!'};
+      const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)',winkler:'rgba(30,70,30,0.92)',hancke:'rgba(50,30,10,0.92)'};
+      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!',winkler:'Schnell ducken! (↓)',hancke:'Schnell ducken! − SCHWERER KERL!'};
       drawWarning(wt[activeEvent.type],wc[activeEvent.type],ws[activeEvent.type]);
     }
     if(state===ST.OVER)drawGameOver();
