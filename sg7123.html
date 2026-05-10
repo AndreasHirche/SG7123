@@ -565,10 +565,6 @@ function drawSplash(){
   cx.fillStyle='#000000';cx.fillRect(W/2-220,titleY-28,440,42);
   cx.fillStyle='#00ffff';cx.font='bold 32px "Courier New",monospace';cx.textAlign='center';
   cx.fillText('LENINPLATZ  1987',W/2,titleY);
-  // Subtitle (yellow)
-  cx.fillStyle='#000000';cx.fillRect(W/2-200,titleY+18,400,26);
-  cx.fillStyle='#ffff00';cx.font='bold 14px "Courier New",monospace';
-  cx.fillText('KISSENSCHLACHT  IM  VEB-WOHNHEIM',W/2,titleY+32);
   // Blinking "press any key" (ZX Spectrum white)
   if(Math.floor(blinkT/18)%2===0){
     cx.fillStyle='#000000';cx.fillRect(W/2-210,H/2+30,420,24);
