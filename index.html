@@ -19,7 +19,8 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 .dpad{display:grid;grid-template-columns:repeat(3,clamp(44px,11vw,56px));grid-auto-rows:clamp(44px,11vw,56px);gap:3px}
 .dpad>span{display:block}
 .tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
-.dpad .tc{width:100%;height:100%}
+.dpad .tc svg{width:55%;height:55%}
+.tc-throw svg{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
 .tc-throw{width:90px!important;height:54px!important;border-radius:0!important;padding:2px;
   clip-path:path('M 0,0 Q 45,11 90,0 Q 74,27 90,54 Q 45,43 0,54 Q 16,27 0,0 Z')}
@@ -584,6 +585,8 @@ function drawSplash(){
   cx.fillStyle='#000000';cx.fillRect(W/2-220,titleY-28,440,42);
   cx.fillStyle='#00ffff';cx.font='bold 32px "Courier New",monospace';cx.textAlign='center';
   cx.fillText('LENINPLATZ  1987',W/2,titleY);
+  cx.fillStyle='#c8a030';cx.font='15px "Courier New",monospace';
+  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,titleY+28);
   // Blinking "press any key" (ZX Spectrum white)
   if(Math.floor(blinkT/18)%2===0){
     cx.fillStyle='#000000';cx.fillRect(W/2-210,H/2+30,420,24);
@@ -605,8 +608,7 @@ function drawSelectScreen(){
   for(let y=0;y<H;y+=3){cx.fillStyle='rgba(0,0,0,0.18)';cx.fillRect(0,y,W,1);}
   cx.textAlign='center';
   cx.fillStyle='#90c868';cx.font='bold 28px Courier New';cx.fillText('✦ LENINPLATZ 1987 ✦',W/2,62);
-  cx.fillStyle='#c8a030';cx.font='16px Courier New';cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,86);
-  cx.strokeStyle='#405030';cx.lineWidth=1;cx.beginPath();cx.moveTo(80,106);cx.lineTo(W-80,106);cx.stroke();
+  cx.strokeStyle='#405030';cx.lineWidth=1;cx.beginPath();cx.moveTo(80,80);cx.lineTo(W-80,80);cx.stroke();
   cx.fillStyle='#a8c878';cx.font='14px Courier New';cx.fillText('WÄHLE DEINE SEITE:',W/2,128);
   drawSideCard(130,148,200,160,'s',humanSide==='s');drawSideCard(390,148,200,160,'p',humanSide==='p');
   const ax=humanSide==='s'?198:458;
