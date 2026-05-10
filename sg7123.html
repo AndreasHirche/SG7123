@@ -13,10 +13,20 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 .pts-s{color:#c0392b;font-weight:700;font-size:0.82rem}
 .pts-p{color:#2c6a9a;font-weight:700;font-size:0.82rem}
 #title-bar{color:#c8b060;font-size:0.72rem;text-align:center;flex:1;letter-spacing:0.15em}
-#touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 6px;gap:6px;justify-content:center}
-.tc{flex:1;max-width:130px;padding:14px 6px;background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:0.9rem;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+#touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 6px;gap:6px;justify-content:space-between}
+#tc-move,#tc-act{display:flex;gap:6px;align-items:center}
+.tc{flex:none;width:clamp(58px,16vw,88px);height:clamp(58px,16vw,88px);background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
 @media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}}
+@media(pointer:coarse) and (orientation:landscape){
+  body{flex-direction:row;overflow:hidden;align-items:center}
+  #hud{position:absolute;top:0;left:0;right:0;z-index:10;max-width:none;border-radius:0;border-left:none;border-right:none;font-size:0.6rem;padding:2px 8px}
+  canvas{height:calc(100dvh - 28px);width:auto;max-height:calc(100dvh - 28px);max-width:calc(100vw - 158px);border:none;margin-top:28px;flex-shrink:0}
+  #touch-ctrl{display:contents!important}
+  #tc-move{display:flex!important;flex-direction:column;gap:8px;width:72px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0;order:-1}
+  #tc-act{display:flex!important;flex-direction:column;gap:6px;width:86px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0;order:1}
+  .tc{width:64px;height:clamp(44px,11dvh,66px);font-size:0.72rem;border-radius:10px}
+}
 </style>
 </head>
 <body>
@@ -26,12 +36,17 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   <span class="pts-p">PREUSSEN: <span id="scoreP">0</span></span>
 </div>
 <canvas id="c" width="720" height="400"></canvas>
-<div id="info">← → Bewegen &nbsp;|&nbsp; W Werfen &nbsp;|&nbsp; S Ducken</div>
+<div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE Werfen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
 <div id="touch-ctrl">
-  <button class="tc" id="tc-l">←</button>
-  <button class="tc" id="tc-w">Werfen</button>
-  <button class="tc" id="tc-s">Ducken</button>
-  <button class="tc" id="tc-r">→</button>
+  <div id="tc-move">
+    <button class="tc" id="tc-l">←</button>
+    <button class="tc" id="tc-r">→</button>
+  </div>
+  <div id="tc-act">
+    <button class="tc" id="tc-up">↑</button>
+    <button class="tc" id="tc-w">Werfen</button>
+    <button class="tc" id="tc-s">↓</button>
+  </div>
 </div>
 
 <script>
@@ -95,11 +110,9 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>K[e.code]=false);
 
 // Touch controls
-['tc-l','tc-r','tc-w','tc-s'].forEach(id=>{
-  const btn=document.getElementById(id);
-  const code={
-    'tc-l':'ArrowLeft','tc-r':'ArrowRight','tc-w':'KeyW','tc-s':'KeyS'
-  }[id];
+['tc-l','tc-r','tc-w','tc-s','tc-up'].forEach(id=>{
+  const btn=document.getElementById(id);if(!btn)return;
+  const code={'tc-l':'ArrowLeft','tc-r':'ArrowRight','tc-w':'Space','tc-s':'ArrowDown','tc-up':'ArrowUp'}[id];
   btn.addEventListener('touchstart',e=>{K[code]=true;btn.classList.add('on');e.preventDefault();if(state===ST.SELECT){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}},{passive:false});
   btn.addEventListener('touchend',e=>{K[code]=false;btn.classList.remove('on');if(state===ST.SELECT&&id==='tc-w'){startGame();}e.preventDefault();},{passive:false});
 });
@@ -127,8 +140,8 @@ let cpuThrowTimer,cpuMoveDir,cpuMoveClock,cpuHideKey=false,eventWarnAge=0;
 function startGame(){
   state=ST.PLAY;cpuSide=humanSide==='s'?'p':'s';
   players={
-    s:{x:160,y:FLOOR,vx:0,dir:1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'s'},
-    p:{x:560,y:FLOOR,vx:0,dir:-1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'p'},
+    s:{x:160,y:FLOOR,vx:0,vy:0,onGround:true,dir:1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'s'},
+    p:{x:560,y:FLOOR,vx:0,vy:0,onGround:true,dir:-1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'p'},
   };
   pillows=[];particles=[];activeEvent=null;floodLevel=0;frame=0;shake=0;
   nextEvent=500+Math.random()*600;
@@ -499,13 +512,14 @@ function updateCPU(){
   });
   if(dang.length>0){
     const pil=dang[0];if(Math.abs(pil.x-cpu.x)<120){cpu.vx=(pil.x<cpu.x)?2.5:-2.5;cpu.dir=cpu.vx>0?1:-1;}
+    if(cpu.onGround&&Math.abs(pil.x-cpu.x)<80&&Math.random()<0.025){cpu.vy=-8;cpu.onGround=false;}
   }else{
     cpuMoveClock--;if(cpuMoveClock<=0){cpuMoveDir=(Math.random()-0.5)*2.8;cpuMoveClock=50+Math.random()*60;}
     cpu.vx=cpuMoveDir;cpu.dir=cpuSide==='s'?1:-1;
   }
   if(activeEvent&&activeEvent.phase==='patrol'){if(Math.random()<0.04)cpuHideKey=true;}
   else if(!activeEvent)cpuHideKey=false;
-  if(cpuHideKey){cpu.hideAnim=Math.min(1,cpu.hideAnim+0.1);cpu.hiding=cpu.hideAnim>0.5;}
+  if(cpuHideKey&&cpu.onGround){cpu.hideAnim=Math.min(1,cpu.hideAnim+0.1);cpu.hiding=cpu.hideAnim>0.5;}
   else{cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;}
   cpuThrowTimer--;
   if(cpuThrowTimer<=0&&!cpu.hiding){
@@ -518,9 +532,10 @@ function handleHuman(){
   const p=players[humanSide];p.vx=0;
   if(K['ArrowLeft']&&!p.hiding){p.vx=-2.8;p.dir=-1;}
   if(K['ArrowRight']&&!p.hiding){p.vx=2.8;p.dir=1;}
-  if(K['KeyW']&&!p.hiding&&p.throwCD<=0)throwPillow(p);
-  if(K['KeyS']){p.hideAnim=Math.min(1,p.hideAnim+0.1);p.hiding=p.hideAnim>0.5;}
-  else{p.hideAnim=Math.max(0,p.hideAnim-0.08);p.hiding=false;}
+  if(K['Space']&&!p.hiding&&p.throwCD<=0)throwPillow(p);
+  if(K['ArrowUp']&&p.onGround&&!p.hiding){p.vy=-8;p.onGround=false;}
+  if(K['ArrowDown']&&p.onGround){p.hideAnim=Math.min(1,p.hideAnim+0.1);p.hiding=p.hideAnim>0.5;}
+  else if(p.onGround){p.hideAnim=Math.max(0,p.hideAnim-0.08);p.hiding=false;}
 }
 function throwPillow(plr){
   pillows.push({x:plr.x+plr.dir*10,y:plr.y-28,vx:plr.dir*5.8,vy:-3.2,owner:plr.side,spin:0,spinV:plr.dir*0.18,life:180});
@@ -531,7 +546,8 @@ function throwPillow(plr){
 function updatePhysics(){
   for(const plr of Object.values(players)){
     plr.x+=plr.vx;
-    // Jedes Zimmer bleibt für die Spieler getrennt
+    plr.y+=plr.vy;plr.vy+=0.45;
+    if(plr.y>=FLOOR){plr.y=FLOOR;plr.vy=0;plr.onGround=true;}else plr.onGround=false;
     if(plr.side==='s')plr.x=Math.max(20,Math.min(W/2-22,plr.x));
     else plr.x=Math.max(W/2+22,Math.min(W-20,plr.x));
     if(plr.throwCD>0)plr.throwCD--;if(plr.hitFlash>0)plr.hitFlash--;
