@@ -379,26 +379,18 @@ function drawCarmen(ev){
   px(x-5,y-40,10,12,'#d45040');
   // Head
   cx.fillStyle=cc.skin;cx.beginPath();cx.arc(x,y-47,8,0,Math.PI*2);cx.fill();
-  // Schwarze Haare: 2 Strähnen hinter ihr + 1 Strähne schwebt in der Luft
+  // Schwarze Haare: 3 Strähnen hinter ihr, eine mit leichtem Bogen nach oben
   cx.fillStyle=cc.hair;cx.beginPath();cx.arc(x,y-49,8,Math.PI,0);cx.fill();
   cx.strokeStyle=cc.hair;cx.lineCap='round';
-  [[9,y-51,0],[6,y-50,3]].forEach(([lw,ys,si])=>{
+  [[9,y-51,0,18],[7,y-49,2,14],[5,y-53,4,10]].forEach(([lw,ys,si,dr])=>{
     cx.lineWidth=lw;cx.beginPath();
     for(let i=0;i<=16;i++){
       const t=i/16;
-      const hx=x+(-ev.dir)*(t*75+si*12)+Math.sin(t*8+frame*0.16+si*1.8)*7;
-      const hy=ys+t*20+Math.cos(t*5+frame*0.12+si)*4;
+      const hx=x+(-ev.dir)*(t*dr*4+si*10)+Math.sin(t*7+frame*0.16+si*1.8)*6;
+      const hy=ys+t*(si===4?-8:16)+Math.cos(t*5+frame*0.12+si)*4;
       i===0?cx.moveTo(hx,hy):cx.lineTo(hx,hy);
     }cx.stroke();
   });
-  // Schwebende Strähne (hängt in der Luft)
-  cx.lineWidth=5;cx.beginPath();
-  for(let i=0;i<=16;i++){
-    const t=i/16;
-    const hx=x+Math.sin(t*5+frame*0.18)*14+Math.sin(frame*0.1+1.2)*6*t;
-    const hy=(y-52)-t*34+Math.cos(t*3.5+frame*0.14)*7;
-    i===0?cx.moveTo(hx,hy):cx.lineTo(hx,hy);
-  }cx.stroke();
   cx.restore();
 }
 
