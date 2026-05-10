@@ -21,8 +21,8 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 .tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
 .dpad .tc{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
-.tc-throw{width:72px!important;height:72px!important;border-radius:6px!important;padding:0;
-  background:#1a1408 url('Kissen.png') center/80% no-repeat;image-rendering:pixelated;clip-path:none!important}
+.tc-throw{width:90px!important;height:54px!important;border-radius:0!important;padding:2px;
+  clip-path:path('M 0,0 Q 45,11 90,0 Q 74,27 90,54 Q 45,43 0,54 Q 16,27 0,0 Z')}
 @media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}canvas{max-height:48dvh}body{justify-content:flex-start}}
 @media(pointer:coarse) and (orientation:landscape){
   body{flex-direction:row;overflow:hidden;align-items:center;justify-content:center}
@@ -32,7 +32,8 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   #tc-left{display:flex!important;order:-1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
   #tc-right{display:flex!important;order:1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
   .dpad{grid-template-columns:repeat(3,36px)!important;grid-auto-rows:36px!important;gap:4px!important}
-  .tc-throw{width:60px!important;height:60px!important;clip-path:none!important}
+  .tc-throw{width:76px!important;height:46px!important;
+    clip-path:path('M 0,0 Q 38,9 76,0 Q 62,23 76,46 Q 38,37 0,46 Q 14,23 0,0 Z')!important}
 }
 </style>
 </head>
@@ -53,7 +54,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
     </div>
   </div>
   <div id="tc-right">
-    <button class="tc tc-throw" id="tc-w"></button>
+    <button class="tc tc-throw" id="tc-w"><svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg></button>
   </div>
 </div>
 
