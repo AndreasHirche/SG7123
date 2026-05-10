@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
 <title>Leninplatz 1987</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%23cc1500'/><text x='32' y='46' font-family='monospace' font-size='28' font-weight='bold' fill='%23ffd700' text-anchor='middle'>LP</text></svg>">
 <style>
@@ -128,6 +132,14 @@ document.addEventListener('keyup',e=>K[e.code]=false);
   btn.addEventListener('touchstart',e=>{K[code]=true;btn.classList.add('on');e.preventDefault();if(state===ST.SPLASH){state=ST.SELECT;return;}if(state===ST.SELECT){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}},{passive:false});
   btn.addEventListener('touchend',e=>{K[code]=false;btn.classList.remove('on');if(state===ST.SELECT&&id==='tc-w'){startGame();}e.preventDefault();},{passive:false});
 });
+
+// Fullscreen on first touch (Android Chrome)
+document.addEventListener('touchstart',function fs(){
+  const el=document.documentElement;
+  if(el.requestFullscreen)el.requestFullscreen({navigationUI:'hide'}).catch(()=>{});
+  else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+  document.removeEventListener('touchstart',fs);
+},{once:true,passive:true});
 
 // ── State ─────────────────────────────────────────────────────────────────
 const ST={SPLASH:'splash',SELECT:'select',PLAY:'play',OVER:'over'};
