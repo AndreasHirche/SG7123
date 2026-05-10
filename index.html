@@ -20,8 +20,8 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 .tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
 .dpad .tc{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
-.tc-throw{width:90px!important;height:54px!important;border-radius:0!important;padding:2px;
-  clip-path:path('M 0,0 Q 45,11 90,0 Q 74,27 90,54 Q 45,43 0,54 Q 16,27 0,0 Z')}
+.tc-throw{width:72px!important;height:72px!important;border-radius:6px!important;padding:0;
+  background:#1a1408 url('Kissen.png') center/80% no-repeat;image-rendering:pixelated;clip-path:none!important}
 @media(pointer:coarse){#touch-ctrl{display:flex}#info{display:none}canvas{max-height:48dvh}body{justify-content:flex-start}}
 @media(pointer:coarse) and (orientation:landscape){
   body{flex-direction:row;overflow:hidden;align-items:center;justify-content:center}
@@ -31,8 +31,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   #tc-left{display:flex!important;order:-1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
   #tc-right{display:flex!important;order:1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
   .dpad{grid-template-columns:repeat(3,36px)!important;grid-auto-rows:36px!important;gap:4px!important}
-  .tc-throw{width:76px!important;height:46px!important;
-    clip-path:path('M 0,0 Q 38,9 76,0 Q 62,23 76,46 Q 38,37 0,46 Q 14,23 0,0 Z')!important}
+  .tc-throw{width:60px!important;height:60px!important;clip-path:none!important}
 }
 </style>
 </head>
@@ -43,7 +42,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   <span class="pts-p">PREUSSEN: <span id="scoreP">0</span></span>
 </div>
 <canvas id="c" width="720" height="400"></canvas>
-<div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE Werfen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
+<div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE <img src="Kissen.png" style="height:1.1em;vertical-align:middle;image-rendering:pixelated"> Werfen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
 <div id="touch-ctrl">
   <div id="tc-left">
     <div class="dpad">
@@ -53,7 +52,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
     </div>
   </div>
   <div id="tc-right">
-    <button class="tc tc-throw" id="tc-w"><svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg></button>
+    <button class="tc tc-throw" id="tc-w"></button>
   </div>
 </div>
 
@@ -177,11 +176,6 @@ function drawRoom(){
   else{cx.fillStyle='#c0b898';cx.fillRect(0,0,W,H);}
   cx.imageSmoothingEnabled=true;
 
-  // Plakate neben Fenstern
-  drawBanner(157,32,158,'#8b0000','#ffd700',['Free Nelson Mandela!'],11,'✊');
-  drawBanner(157,72,158,'#1a3a08','#a8f060',['Vorwärts immer,','rückwärts nimmer!'],10,'⚡');
-  drawBanner(365,32,158,'#0a1a2e','#80c8ff',['Oma und Opa sind','für Frieden in Europa'],10,'🕊');
-  drawBanner(365,82,158,'#2a1a00','#e8c060',['Den Sozialismus','in seinem Lauf','hält weder Ochs','noch Esel auf'],10,'☭');
   drawBed(55,FLOOR,'left','#b89820');drawBed(665,FLOOR,'right','#c8c8c0');
 
   // Zimmer-Schriftzug
@@ -379,6 +373,17 @@ function drawCarmen(ev){
   px(x-5,y-40,10,12,'#d45040');
   // Head
   cx.fillStyle=cc.skin;cx.beginPath();cx.arc(x,y-47,8,0,Math.PI*2);cx.fill();
+  // Brille
+  const gy=y-46;
+  cx.fillStyle='rgba(160,220,240,0.35)';
+  cx.beginPath();cx.ellipse(x-4,gy,3,2.5,0,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.ellipse(x+4,gy,3,2.5,0,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='#1a0a00';cx.lineWidth=1.5;
+  cx.beginPath();cx.ellipse(x-4,gy,3,2.5,0,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.ellipse(x+4,gy,3,2.5,0,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.moveTo(x-1,gy);cx.lineTo(x+1,gy);cx.stroke();
+  cx.beginPath();cx.moveTo(x-7,gy);cx.lineTo(x-9,gy-1);cx.stroke();
+  cx.beginPath();cx.moveTo(x+7,gy);cx.lineTo(x+9,gy-1);cx.stroke();
   // Schwarze Haare: 3 Strähnen hinter ihr, eine mit leichtem Bogen nach oben
   cx.fillStyle=cc.hair;cx.beginPath();cx.arc(x,y-49,8,Math.PI,0);cx.fill();
   cx.strokeStyle=cc.hair;cx.lineCap='round';
@@ -694,7 +699,7 @@ function updatePhysics(){
     plr.x+=plr.vx;
     plr.y+=plr.vy;plr.vy+=0.45;
     const b=BEDS[plr.side];
-    if(plr.vy>=0&&plr.y>=FLOOR-BED_H&&plr.x>=b.x1&&plr.x<=b.x2){
+    if(plr.vy>0&&!plr.onGround&&plr.y>=FLOOR-BED_H&&plr.x>=b.x1&&plr.x<=b.x2){
       plr.y=FLOOR-BED_H;plr.vy=0;plr.onGround=true;
     }else if(plr.y>=FLOOR){plr.y=FLOOR;plr.vy=0;plr.onGround=true;}
     else plr.onGround=false;
@@ -793,7 +798,7 @@ function draw(){
     if(eventWarnAge>0&&activeEvent){
       const wt={abv:'⚠  ABV-BEAUFTRAGTER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!'};
       const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)'};
-      const ws={abv:'Schnell ducken! (S)',hausmeister:'Schnell ducken! (S)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!'};
+      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!'};
       drawWarning(wt[activeEvent.type],wc[activeEvent.type],ws[activeEvent.type]);
     }
     if(state===ST.OVER)drawGameOver();
