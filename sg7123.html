@@ -202,27 +202,30 @@ function drawBed(x,y,side,col){
   const w=108,h=32,bx=side==='left'?x:x-w;
   const hbx=side==='left'?bx:bx+w-8;
   const fbx=side==='left'?bx+w-8:bx;
+  const legH=10;
   cx.imageSmoothingEnabled=false;
-  // headboard (tall) – gray
+  // headboard – gray, no stroke
   cx.fillStyle='#606060';cx.fillRect(hbx,y-h-28,8,34);
   cx.fillStyle='#787878';cx.fillRect(hbx+1,y-h-26,6,26);
-  cx.strokeStyle='#383838';cx.lineWidth=1.5;cx.strokeRect(hbx,y-h-28,8,34);
-  // footboard (shorter) – gray
+  // footboard – gray, no stroke
   cx.fillStyle='#606060';cx.fillRect(fbx,y-h-16,8,22);
   cx.fillStyle='#787878';cx.fillRect(fbx+1,y-h-14,6,14);
-  cx.strokeStyle='#383838';cx.lineWidth=1.5;cx.strokeRect(fbx,y-h-16,8,22);
-  // frame
-  cx.fillStyle='#2a1e0c';cx.fillRect(bx,y-h,w,h);
-  cx.strokeStyle='#0a0806';cx.lineWidth=2;cx.strokeRect(bx,y-h,w,h);
-  // white sheet/mattress
-  cx.fillStyle='#f0ede8';cx.fillRect(bx+2,y-h+2,w-4,h-4);
-  // white blanket
-  cx.fillStyle='#e6e2dc';cx.fillRect(bx+2,y-h+13,w-4,h-15);
-  cx.strokeStyle='#c4c0ba';cx.lineWidth=1;cx.beginPath();cx.moveTo(bx+2,y-h+13);cx.lineTo(bx+w-2,y-h+13);cx.stroke();
-  // light gray pillow
+  // gray frame body (full height)
+  cx.fillStyle='#707070';cx.fillRect(bx,y-h,w,h);
+  // darker legs at bottom corners
+  cx.fillStyle='#484848';
+  cx.fillRect(bx,y-legH,8,legH);
+  cx.fillRect(bx+w-8,y-legH,8,legH);
+  // mattress – flying pillow color, ends above leg area
+  cx.fillStyle='#e8e0ca';cx.fillRect(bx+2,y-h+2,w-4,h-legH-3);
+  // blanket fold
+  cx.fillStyle='#d4ccb0';cx.fillRect(bx+2,y-h+13,w-4,h-legH-14);
+  cx.strokeStyle='#c0b898';cx.lineWidth=1;
+  cx.beginPath();cx.moveTo(bx+2,y-h+13);cx.lineTo(bx+w-2,y-h+13);cx.stroke();
+  // pillow – flying pillow color
   const px2=side==='left'?bx+10:bx+w-36;
-  cx.fillStyle='#d8d4ce';cx.fillRect(px2,y-h+3,26,11);
-  cx.strokeStyle='#b0aca6';cx.lineWidth=1;cx.strokeRect(px2,y-h+3,26,11);
+  cx.fillStyle='#e8e0ca';cx.fillRect(px2,y-h+3,26,11);
+  cx.strokeStyle='#c0b898';cx.lineWidth=1;cx.strokeRect(px2,y-h+3,26,11);
   cx.imageSmoothingEnabled=true;
 }
 function drawBanner(x,y,w,bg,tc,lines,fs,icon){
@@ -461,20 +464,17 @@ function drawWinkler(ev){
   // Flat hand wave – wrist rotates top-to-bottom
   const wwave=Math.sin(frame*0.2)*0.65;
   cx.save();cx.translate(12,y-51);cx.rotate(wwave);
-  cx.fillStyle='#d4a880';cx.fillRect(-7,-3,14,6);// flat hand rect
-  cx.strokeStyle='#b08060';cx.lineWidth=0.8;cx.strokeRect(-7,-3,14,6);
+  cx.fillStyle='#d4a880';cx.fillRect(-11,-2,22,4);
+  cx.strokeStyle='#b08060';cx.lineWidth=0.8;cx.strokeRect(-11,-2,22,4);
   cx.restore();
   // Kopf
   cx.fillStyle='#d4a880';cx.beginPath();cx.arc(0,y-52,9,0,Math.PI*2);cx.fill();
-  // Haarkranz (grauer Bogen unten am Kopf, oben kahl)
+  // Haarkranz über den Ohren (two temple patches at sides)
   cx.strokeStyle='#9a9a9a';cx.lineWidth=5;cx.lineCap='round';
-  cx.beginPath();cx.arc(0,y-52,10,Math.PI*0.15,Math.PI*0.85);cx.stroke();
-  cx.lineWidth=3;cx.beginPath();cx.arc(0,y-52,10.5,Math.PI*0.2,Math.PI*0.8);cx.stroke();
+  cx.beginPath();cx.arc(0,y-52,10.5,-Math.PI*0.32,Math.PI*0.12);cx.stroke();
+  cx.beginPath();cx.arc(0,y-52,10.5,Math.PI*0.88,Math.PI*1.32);cx.stroke();
   // Eyes (facing right = left eye at -3, right eye at +2)
   cx.fillStyle='#1a1010';cx.fillRect(-4,y-54,2,2);cx.fillRect(2,y-54,2,2);
-  // Smile
-  cx.strokeStyle='#6a3010';cx.lineWidth=1.2;cx.lineCap='butt';
-  cx.beginPath();cx.arc(0,y-50,3.5,0.1,Math.PI-0.1);cx.stroke();
   cx.restore();
 }
 
@@ -517,8 +517,8 @@ function drawHancke(ev){
   cx.beginPath();cx.rect(2,y-62,12,9);cx.stroke();
   cx.lineWidth=3;cx.beginPath();cx.moveTo(-2,y-57.5);cx.lineTo(2,y-57.5);cx.stroke();
   cx.lineWidth=2;
-  cx.beginPath();cx.moveTo(-26,y-57.5);cx.lineTo(-14,y-57.5);cx.stroke();
-  cx.beginPath();cx.moveTo(14,y-57.5);cx.lineTo(26,y-57.5);cx.stroke();
+  cx.beginPath();cx.moveTo(-20,y-57.5);cx.lineTo(-14,y-57.5);cx.stroke();
+  cx.beginPath();cx.moveTo(14,y-57.5);cx.lineTo(20,y-57.5);cx.stroke();
   // Dampfwolken über Kopf (position in world coords, not flipped)
   cx.restore();cx.save();cx.globalAlpha=alpha;
   for(let p=0;p<3;p++){
