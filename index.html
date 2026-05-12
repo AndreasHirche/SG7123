@@ -200,7 +200,7 @@ const CC={
 const WIN_SCORE=40;
 const BED_H=32;
 const BEDS={s:{x1:55,x2:163},p:{x1:557,x2:665}};
-const WINDOWS={s:{x:42,y:80,w:72,h:70},p:{x:524,y:80,w:72,h:70}};
+const WINDOWS={s:{x:38,y:130,w:90,h:100},p:{x:520,y:130,w:90,h:100}};
 function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
@@ -259,22 +259,23 @@ function drawRoom(){
 function drawWindowAnim(win,anim){
   const{x,y,w,h}=win;
   const fold=Math.cos(anim*Math.PI/2); // 1=closed, 0=fully open
-  const pw=w/2;
+  const hingeLeft=x<W/2;
   cx.save();
   if(fold>0.02){
-    const lw=pw*fold, skew=h*0.07*anim;
-    // Left panel
-    cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+lw,y+skew);cx.lineTo(x+lw,y+h-skew);cx.lineTo(x,y+h);cx.closePath();
-    const gl=cx.createLinearGradient(x,y,x+lw,y);
-    gl.addColorStop(0,`rgba(140,215,255,${0.78-0.68*anim})`);gl.addColorStop(1,`rgba(200,240,255,${0.55-0.45*anim})`);
-    cx.fillStyle=gl;cx.fill();
-    cx.fillStyle=`rgba(0,20,80,${0.18*anim})`;cx.fill();
-    // Right panel
-    cx.beginPath();cx.moveTo(x+w,y);cx.lineTo(x+w-lw,y+skew);cx.lineTo(x+w-lw,y+h-skew);cx.lineTo(x+w,y+h);cx.closePath();
-    const gr=cx.createLinearGradient(x+w,y,x+w-lw,y);
-    gr.addColorStop(0,`rgba(140,215,255,${0.78-0.68*anim})`);gr.addColorStop(1,`rgba(200,240,255,${0.55-0.45*anim})`);
-    cx.fillStyle=gr;cx.fill();
-    cx.fillStyle=`rgba(0,20,80,${0.18*anim})`;cx.fill();
+    const pw=w*fold, skew=h*0.12*anim;
+    cx.beginPath();
+    if(hingeLeft){
+      cx.moveTo(x,y);cx.lineTo(x+pw,y+skew);cx.lineTo(x+pw,y+h-skew);cx.lineTo(x,y+h);
+    }else{
+      cx.moveTo(x+w,y);cx.lineTo(x+w-pw,y+skew);cx.lineTo(x+w-pw,y+h-skew);cx.lineTo(x+w,y+h);
+    }
+    cx.closePath();
+    const x0=hingeLeft?x:x+w, x1=hingeLeft?x+pw:x+w-pw;
+    const g=cx.createLinearGradient(x0,y,x1,y);
+    g.addColorStop(0,`rgba(160,225,255,${0.85-0.75*anim})`);
+    g.addColorStop(1,`rgba(100,185,245,${0.62-0.52*anim})`);
+    cx.fillStyle=g;cx.fill();
+    cx.fillStyle=`rgba(0,10,60,${0.28*anim})`;cx.fill();
   }
   // Frame + cross
   cx.globalAlpha=1;cx.strokeStyle='#504030';cx.lineWidth=3;cx.strokeRect(x,y,w,h);
@@ -987,7 +988,7 @@ function loop(){
     if(activeEvent&&activeEvent.type==='winkler'){
       for(const[side,plr] of Object.entries(players)){
         const win=WINDOWS[side];
-        if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-20&&plr.x<=win.x+win.w+20){windowOpen[side]=true;}
+        if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-40&&plr.x<=win.x+win.w+40){windowOpen[side]=true;}
       }
     }
   }
