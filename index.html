@@ -241,7 +241,7 @@ function drawRoom(){
   for(const[side,win] of Object.entries(WINDOWS)){
     const anim=windowAnim?windowAnim[side]:0;
     const winklerActive=activeEvent&&activeEvent.type==='winkler';
-    drawWindowAnim(win,anim,winklerActive||anim>0.01);
+    drawWindowAnim(win,anim,true);
     if(winklerActive&&anim<0.5&&activeEvent.phase==='patrol'){
       cx.save();cx.shadowColor='#ff8800';cx.shadowBlur=7+4*Math.abs(Math.sin(frame*0.1));
       cx.strokeStyle='#ff8800';cx.lineWidth=2;cx.strokeRect(win.x-2,win.y-2,win.w+4,win.h+4);cx.restore();
@@ -982,11 +982,9 @@ function loop(){
         if(Math.abs(windowAnim[side]-t)<0.01)windowAnim[side]=t;
       }
     }
-    if(activeEvent&&activeEvent.type==='winkler'){
-      for(const[side,plr] of Object.entries(players)){
-        const win=WINDOWS[side];
-        if(!windowOpen[side]&&!plr.onGround){windowOpen[side]=true;}
-      }
+    for(const[side,plr] of Object.entries(players)){
+      const win=WINDOWS[side];
+      if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-30&&plr.x<=win.x+win.w+30){windowOpen[side]=true;}
     }
   }
   draw();requestAnimationFrame(loop);
