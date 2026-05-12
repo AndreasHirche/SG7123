@@ -625,9 +625,9 @@ function drawParticles(){
 // ── Overlays ──────────────────────────────────────────────────────────────
 function drawWarning(txt,color,sub){
   cx.save();cx.globalAlpha=0.88+0.12*Math.sin(frame*0.3);
-  cx.fillStyle=color;cx.fillRect(0,H/2-33,W,64);
+  cx.fillStyle=color;cx.fillRect(0,H/2-36,W,70);
   cx.fillStyle='#fff';cx.font='bold 20px Courier New';cx.textAlign='center';cx.fillText(txt,W/2,H/2+4);
-  if(sub){cx.font='16px Courier New';cx.fillStyle='rgba(255,255,255,0.9)';cx.fillText(sub,W/2,H/2+26);}
+  if(sub){cx.font='bold 18px Courier New';cx.fillStyle='#fff';cx.fillText(sub,W/2,H/2+28);}
   cx.textAlign='left';cx.restore();
 }
 function drawHideBar(plr){
@@ -860,6 +860,7 @@ function updateEvent(){
   if(!activeEvent)return;
   const ev=activeEvent;
   ev.progress=Math.min(1,ev.progress+0.003);
+  if(ev.type==='hancke'&&ev.phase==='patrol')shake=Math.max(shake,1.4+0.8*Math.abs(Math.sin(frame*0.18)));
   const spd=ev.type==='carmen'?4.8:ev.type==='teurich'?1.5:ev.type==='hancke'?1.8:2.4;
   ev.x+=ev.dir*spd*(ev.phase==='exit'?1.6:1);
   if(ev.phase==='enter'&&ev.progress>0.42)ev.phase='patrol';
@@ -898,6 +899,7 @@ function draw(){
       cx.restore();
     }
     if(activeEvent){
+      if(activeEvent.type==='winkler'){const wa=0.07+0.05*Math.abs(Math.sin(frame*0.04));cx.fillStyle=`rgba(255,110,10,${wa})`;cx.fillRect(0,0,W,H);}
       if(activeEvent.type==='abv')drawABV(activeEvent);
       else if(activeEvent.type==='hausmeister')drawHausmeister(activeEvent);
       else if(activeEvent.type==='carmen')drawCarmen(activeEvent);
