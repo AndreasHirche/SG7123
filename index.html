@@ -198,7 +198,7 @@ const CC={
 const WIN_SCORE=40;
 const BED_H=32;
 const BEDS={s:{x1:55,x2:163},p:{x1:557,x2:665}};
-const WINDOWS={s:{x:80,y:140,w:50,h:40},p:{x:590,y:140,w:50,h:40}};
+const WINDOWS={s:{x:43,y:88,w:47,h:60},p:{x:545,y:88,w:47,h:60}};
 function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
@@ -235,11 +235,13 @@ function drawRoom(){
 
   drawBed(55,FLOOR,'left','#b89820');drawBed(665,FLOOR,'right','#c8c8c0');
 
-  // Windows
+  // Windows – overlay on bg image
   for(const[side,win] of Object.entries(WINDOWS)){
     const open=windowOpen&&windowOpen[side];
-    drawWin(win.x,win.y,win.w,win.h,side==='s'?'#c8a030':'#808080');
-    if(open){cx.fillStyle='rgba(160,230,255,0.55)';cx.fillRect(win.x+3,win.y+3,win.w-6,win.h-6);}
+    if(open){
+      cx.fillStyle='rgba(160,230,255,0.55)';cx.fillRect(win.x,win.y,win.w,win.h);
+      cx.fillStyle='rgba(255,255,255,0.25)';cx.fillRect(win.x,win.y,win.w,win.h/2);
+    }
     if(activeEvent&&activeEvent.type==='winkler'&&!open&&activeEvent.phase==='patrol'){
       cx.save();cx.shadowColor='#ff8800';cx.shadowBlur=8+5*Math.abs(Math.sin(frame*0.1));
       cx.strokeStyle='#ff8800';cx.lineWidth=2;cx.strokeRect(win.x-2,win.y-2,win.w+4,win.h+4);cx.restore();
@@ -789,8 +791,8 @@ function updateCPU(){
     cpuHideKey=false;cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;
   }else if(activeEvent&&activeEvent.type==='winkler'&&activeEvent.phase==='patrol'&&!windowOpen[cpuSide]){
     const win=WINDOWS[cpuSide];const winCX=win.x+win.w/2;
-    if(Math.abs(cpu.x-winCX)>25){cpu.vx=(cpu.x<winCX?1:-1)*2.8;cpu.dir=cpu.vx>0?1:-1;}
-    else{windowOpen[cpuSide]=true;}
+    if(Math.abs(cpu.x-winCX)>20){cpu.vx=(cpu.x<winCX?1:-1)*2.8;cpu.dir=cpu.vx>0?1:-1;}
+    else if(cpu.onGround&&Math.random()<0.12){cpu.vy=-8;cpu.onGround=false;}
     cpuHideKey=false;cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;
   }else{
     if(activeEvent&&activeEvent.phase==='patrol'){if(Math.random()<0.04)cpuHideKey=true;}
@@ -810,11 +812,7 @@ function handleHuman(){
   if(K['ArrowLeft']&&!p.hiding){p.vx=-2.8;p.dir=-1;}
   if(K['ArrowRight']&&!p.hiding){p.vx=2.8;p.dir=1;}
   if(K['Space']&&!p.hiding&&p.throwCD<=0)throwPillow(p);
-  if(K['ArrowUp']&&p.onGround&&!p.hiding){
-    const win=WINDOWS[humanSide];
-    if(activeEvent&&activeEvent.type==='winkler'&&!windowOpen[humanSide]&&Math.abs(p.x-(win.x+win.w/2))<55){windowOpen[humanSide]=true;}
-    else{p.vy=-8;p.onGround=false;}
-  }
+  if(K['ArrowUp']&&p.onGround&&!p.hiding){p.vy=-8;p.onGround=false;}
   if(K['ArrowDown']&&p.onGround){p.hideAnim=Math.min(1,p.hideAnim+0.1);p.hiding=p.hideAnim>0.5;}
   else if(p.onGround){p.hideAnim=Math.max(0,p.hideAnim-0.08);p.hiding=false;}
 }
@@ -898,6 +896,7 @@ function updateEvent(){
       }
     }
     if(ev.type==='carmen'){let t=setInterval(()=>{floodLevel=Math.max(0,floodLevel-0.015);if(floodLevel<=0)clearInterval(t);},60);}
+    if(ev.type==='winkler')windowOpen={s:false,p:false};
     activeEvent=null;
   }
 }
@@ -949,7 +948,15 @@ function draw(){
 // ── Loop ────────────────────────────────────────────────────────────────────
 function loop(){
   frame++;if(shake>0)shake-=0.35;
-  if(state===ST.PLAY){handleHuman();updateCPU();updatePhysics();updateEvent();}
+  if(state===ST.PLAY){
+    handleHuman();updateCPU();updatePhysics();updateEvent();
+    if(activeEvent&&activeEvent.type==='winkler'){
+      for(const[side,plr] of Object.entries(players)){
+        const win=WINDOWS[side];
+        if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-20&&plr.x<=win.x+win.w+20){windowOpen[side]=true;}
+      }
+    }
+  }
   draw();requestAnimationFrame(loop);
 }
 loop();
