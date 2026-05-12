@@ -162,21 +162,23 @@ document.addEventListener('touchstart',function fs(){
   document.removeEventListener('touchstart',fs);
 },{once:true,passive:true});
 
-// Canvas tap: select team on splash by tapping left/right half
+// Canvas tap: select team and start game
 cv.addEventListener('touchstart',e=>{
   if(state!==ST.SPLASH)return;
   const rect=cv.getBoundingClientRect();
   const tx=(e.touches[0].clientX-rect.left)*(W/rect.width);
   humanSide=tx<W/2?'s':'p';cpuSide=humanSide==='s'?'p':'s';
+  startGame();
   e.preventDefault();
 },{passive:false});
 
-// Canvas click: select team on splash (desktop mouse)
+// Canvas click: select team and start game (desktop)
 cv.addEventListener('click',e=>{
   if(state!==ST.SPLASH)return;
   const rect=cv.getBoundingClientRect();
   const tx=(e.clientX-rect.left)*(W/rect.width);
   humanSide=tx<W/2?'s':'p';cpuSide=humanSide==='s'?'p':'s';
+  startGame();
 });
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -703,7 +705,7 @@ function drawSplash(){
   cx.textAlign='center';
   cx.fillStyle='#000';cx.fillRect(W/2-230,278,460,18);
   cx.fillStyle='#607848';cx.font='11px "Courier New",monospace';
-  cx.fillText('← → Seite wählen    LEERTASTE Starten',W/2,292);
+  cx.fillText('← → wählen  |  TIPPEN / LEERTASTE starten',W/2,292);
   // Version
   cx.font='bold 22px "Courier New",monospace';
   const vw=cx.measureText(VERSION).width;
@@ -715,16 +717,24 @@ function drawSplash(){
 // ── Select Screen ─────────────────────────────────────────────────────────
 let blinkT=0;
 function drawSideCard(x,y,w,h,side,sel){
-  const ac=side==='s'?'#d4a820':'#909090',bg=side==='s'?'#1a1408':'#101010';
-  cx.shadowColor='rgba(0,0,0,0.7)';cx.shadowBlur=14;cx.shadowOffsetX=4;cx.shadowOffsetY=5;
-  rr(x,y,w,h,4,bg,sel?ac:'#304028');
-  cx.shadowColor='transparent';cx.shadowBlur=0;cx.shadowOffsetX=0;cx.shadowOffsetY=0;
-  cx.textAlign='center';cx.fillStyle=sel?ac:'#607848';cx.font='bold 20px Courier New';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
+  const ac=side==='s'?'#d4a820':'#909090',bg=side==='s'?(sel?'#231c08':'#1a1408'):(sel?'#151515':'#101010');
+  cx.save();
+  if(!sel)cx.globalAlpha=0.42;
+  if(sel){
+    const pulse=12+8*Math.abs(Math.sin(blinkT*0.07));
+    cx.shadowColor=ac;cx.shadowBlur=pulse;
+    cx.lineWidth=3;cx.strokeStyle=ac;
+    cx.beginPath();cx.roundRect(x-2,y-2,w+4,h+4,6);cx.stroke();
+    cx.shadowColor='transparent';cx.shadowBlur=0;
+  }
+  rr(x,y,w,h,4,bg,sel?ac:'#2a3820');
+  cx.textAlign='center';cx.fillStyle=sel?ac:'#506040';cx.font='bold 20px Courier New';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
   const ww=72,wh=86;const wx=x+w/2-ww/2,wy=y+42;
   if(side==='s')drawWappenSachsen(wx,wy,ww,wh);
   else drawWappenPreussen(wx,wy,ww,wh);
-  cx.fillStyle=sel?(side==='s'?'#c0392b':'#2c6a9a'):'#606050';cx.font='bold 11px Courier New';cx.fillText(side===humanSide?'[ DU ]':'[ KI ]',x+w/2,y+h-10);
-  cx.textAlign='left';
+  if(sel){cx.fillStyle=side==='s'?'#d4a820':'#a0b8c8';cx.font='bold 15px Courier New';cx.fillText('► DU ◄',x+w/2,y+h-10);}
+  else{cx.fillStyle='#404040';cx.font='11px Courier New';cx.fillText('[ KI ]',x+w/2,y+h-10);}
+  cx.textAlign='left';cx.restore();
 }
 
 // ── Game Over ─────────────────────────────────────────────────────────────
