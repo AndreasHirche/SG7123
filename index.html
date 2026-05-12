@@ -17,7 +17,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 #info{max-width:720px;width:100%;padding:4px 14px;background:#0a0a06;border:2px solid #5a4a28;border-top:1px solid #1e1a0e;border-radius:0 0 3px 3px;font-size:1rem;color:#6a5e3a;text-align:center;letter-spacing:0.08em}
 .pts-s{color:#d4a820;font-weight:700;font-size:1.05rem}
 .pts-p{color:#b0b8b0;font-weight:700;font-size:1.05rem}
-#title-bar{color:#c8b060;font-size:1rem;text-align:center;flex:1;letter-spacing:0.15em}
+#title-bar{color:#cc1500;font-size:1.25rem;text-align:center;flex:1;letter-spacing:0.15em;font-weight:700}
 #touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 10px;justify-content:space-between;align-items:center}
 #tc-left,#tc-right{display:flex;align-items:center;justify-content:center}
 .dpad{display:grid;grid-template-columns:repeat(3,clamp(44px,11vw,56px));grid-auto-rows:clamp(44px,11vw,56px);gap:3px}
@@ -198,10 +198,11 @@ const CC={
 const WIN_SCORE=40;
 const BED_H=32;
 const BEDS={s:{x1:55,x2:163},p:{x1:557,x2:665}};
+const WINDOWS={s:{x:80,y:140,w:50,h:40},p:{x:590,y:140,w:50,h:40}};
 function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
-let players,pillows,particles,activeEvent,nextEvent,frame,shake,floodLevel;
+let players,pillows,particles,activeEvent,nextEvent,frame,shake,floodLevel,windowOpen;
 let cpuThrowTimer,cpuMoveDir,cpuMoveClock,cpuHideKey=false,eventWarnAge=0;
 
 function startGame(){
@@ -210,7 +211,7 @@ function startGame(){
     s:{x:160,y:FLOOR,vx:0,vy:0,onGround:true,dir:1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'s'},
     p:{x:560,y:FLOOR,vx:0,vy:0,onGround:true,dir:-1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'p'},
   };
-  pillows=[];particles=[];activeEvent=null;floodLevel=0;frame=0;shake=0;
+  pillows=[];particles=[];activeEvent=null;floodLevel=0;frame=0;shake=0;windowOpen={s:false,p:false};
   nextEvent=500+Math.random()*600;
   cpuThrowTimer=80+Math.random()*80;cpuMoveDir=0;cpuMoveClock=0;cpuHideKey=false;
   document.getElementById('scoreS').textContent='0';
@@ -233,6 +234,19 @@ function drawRoom(){
   cx.imageSmoothingEnabled=true;
 
   drawBed(55,FLOOR,'left','#b89820');drawBed(665,FLOOR,'right','#c8c8c0');
+
+  // Windows
+  for(const[side,win] of Object.entries(WINDOWS)){
+    const open=windowOpen&&windowOpen[side];
+    drawWin(win.x,win.y,win.w,win.h,side==='s'?'#c8a030':'#808080');
+    if(open){cx.fillStyle='rgba(160,230,255,0.55)';cx.fillRect(win.x+3,win.y+3,win.w-6,win.h-6);}
+    if(activeEvent&&activeEvent.type==='winkler'&&!open&&activeEvent.phase==='patrol'){
+      cx.save();cx.shadowColor='#ff8800';cx.shadowBlur=8+5*Math.abs(Math.sin(frame*0.1));
+      cx.strokeStyle='#ff8800';cx.lineWidth=2;cx.strokeRect(win.x-2,win.y-2,win.w+4,win.h+4);cx.restore();
+      cx.fillStyle='#ff8800';cx.font='bold 10px Courier New';cx.textAlign='center';
+      cx.fillText('AUF! (↑)',win.x+win.w/2,win.y+win.h+12);cx.textAlign='left';
+    }
+  }
 
   // Wappen an der Wand
   const ww=80,wh=96;
@@ -682,25 +696,21 @@ function drawSplash(){
   cx.globalAlpha=1;
   // Title
   cx.textAlign='center';
-  const titleY=38;
-  cx.fillStyle='#000000';cx.fillRect(W/2-220,titleY-26,440,38);
-  cx.fillStyle='#00ffff';cx.font='bold 28px "Courier New",monospace';
-  cx.fillText('LENINPLATZ  1987',W/2,titleY);
-  cx.fillStyle='#000000';cx.fillRect(W/2-215,titleY-3,430,28);
+  cx.fillStyle='#000000';cx.fillRect(W/2-215,8,430,26);
   cx.fillStyle='#c8a030';cx.font='18px "Courier New",monospace';
-  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,titleY+18);
+  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,28);
   // Team selection header
-  cx.fillStyle='#000';cx.fillRect(W/2-170,56,340,16);
+  cx.fillStyle='#000';cx.fillRect(W/2-170,40,340,16);
   cx.fillStyle='#a8c878';cx.font='bold 12px "Courier New",monospace';
-  cx.fillText('── WÄHLE DEINE SEITE ──',W/2,70);
+  cx.fillText('── WÄHLE DEINE SEITE ──',W/2,54);
   // Side cards
-  drawSideCard(120,148,160,120,'s',humanSide==='s');
-  drawSideCard(440,148,160,120,'p',humanSide==='p');
+  drawSideCard(120,68,160,120,'s',humanSide==='s');
+  drawSideCard(440,68,160,120,'p',humanSide==='p');
   // Blinking selection arrow
   const ax=humanSide==='s'?200:520;
   if(Math.floor(blinkT/15)%2===0){
     cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';
-    cx.font='16px "Courier New",monospace';cx.fillText('▼',ax,74);
+    cx.font='16px "Courier New",monospace';cx.fillText('▼',ax,62);
   }
   // Controls hint
   cx.textAlign='center';
@@ -777,6 +787,11 @@ function updateCPU(){
       if(cpu.onGround&&Math.random()<0.06){cpu.vy=-8;cpu.onGround=false;}
     }
     cpuHideKey=false;cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;
+  }else if(activeEvent&&activeEvent.type==='winkler'&&activeEvent.phase==='patrol'&&!windowOpen[cpuSide]){
+    const win=WINDOWS[cpuSide];const winCX=win.x+win.w/2;
+    if(Math.abs(cpu.x-winCX)>25){cpu.vx=(cpu.x<winCX?1:-1)*2.8;cpu.dir=cpu.vx>0?1:-1;}
+    else{windowOpen[cpuSide]=true;}
+    cpuHideKey=false;cpu.hideAnim=Math.max(0,cpu.hideAnim-0.08);cpu.hiding=false;
   }else{
     if(activeEvent&&activeEvent.phase==='patrol'){if(Math.random()<0.04)cpuHideKey=true;}
     else if(!activeEvent)cpuHideKey=false;
@@ -795,7 +810,11 @@ function handleHuman(){
   if(K['ArrowLeft']&&!p.hiding){p.vx=-2.8;p.dir=-1;}
   if(K['ArrowRight']&&!p.hiding){p.vx=2.8;p.dir=1;}
   if(K['Space']&&!p.hiding&&p.throwCD<=0)throwPillow(p);
-  if(K['ArrowUp']&&p.onGround&&!p.hiding){p.vy=-8;p.onGround=false;}
+  if(K['ArrowUp']&&p.onGround&&!p.hiding){
+    const win=WINDOWS[humanSide];
+    if(activeEvent&&activeEvent.type==='winkler'&&!windowOpen[humanSide]&&Math.abs(p.x-(win.x+win.w/2))<55){windowOpen[humanSide]=true;}
+    else{p.vy=-8;p.onGround=false;}
+  }
   if(K['ArrowDown']&&p.onGround){p.hideAnim=Math.min(1,p.hideAnim+0.1);p.hiding=p.hideAnim>0.5;}
   else if(p.onGround){p.hideAnim=Math.max(0,p.hideAnim-0.08);p.hiding=false;}
 }
@@ -853,6 +872,7 @@ function updateEvent(){
     const t=types[~~(Math.random()*types.length)];
     const fromRight=t==='carmen'||(t==='winkler'||t==='hancke')&&Math.random()>0.5;
     activeEvent={type:t,progress:0,phase:'enter',x:fromRight?W+50:-60,dir:fromRight?-1:1,floodY:0};
+    if(t==='winkler')windowOpen={s:false,p:false};
     nextEvent=450+Math.random()*550;eventWarnAge=220;
     playSound(t==='teurich'?'teurich':t==='abv'?'abv':t==='hausmeister'?'hausmeister':t==='winkler'||t==='hancke'?'hausmeister':'carmen');
   }
@@ -860,7 +880,7 @@ function updateEvent(){
   if(!activeEvent)return;
   const ev=activeEvent;
   ev.progress=Math.min(1,ev.progress+0.003);
-  if(ev.type==='hancke'&&ev.phase==='patrol')shake=Math.max(shake,1.4+0.8*Math.abs(Math.sin(frame*0.18)));
+  if(ev.type==='hancke'&&ev.phase==='patrol')shake=Math.max(shake,3.5+2*Math.abs(Math.sin(frame*0.15)));
   const spd=ev.type==='carmen'?4.8:ev.type==='teurich'?1.5:ev.type==='hancke'?1.8:2.4;
   ev.x+=ev.dir*spd*(ev.phase==='exit'?1.6:1);
   if(ev.phase==='enter'&&ev.progress>0.42)ev.phase='patrol';
@@ -869,7 +889,7 @@ function updateEvent(){
   if(ev.phase==='exit'&&(ev.x<-100||ev.x>W+100)){
     const penalty=ev.type==='teurich'?10:ev.type==='hancke'?8:5;
     for(const plr of Object.values(players)){
-      const safe=ev.type==='carmen'?isOnBed(plr):(plr.hiding&&plr.hideAnim>=0.55);
+      const safe=ev.type==='carmen'?isOnBed(plr):ev.type==='winkler'?windowOpen[plr.side]:(plr.hiding&&plr.hideAnim>=0.55);
       if(!safe){
         const sc=plr.side==='s'?'scoreS':'scoreP';
         const newScore=Math.max(0,parseInt(document.getElementById(sc).textContent)-penalty);
@@ -899,7 +919,13 @@ function draw(){
       cx.restore();
     }
     if(activeEvent){
-      if(activeEvent.type==='winkler'){const wa=0.07+0.05*Math.abs(Math.sin(frame*0.04));cx.fillStyle=`rgba(255,110,10,${wa})`;cx.fillRect(0,0,W,H);}
+      if(activeEvent.type==='winkler'){
+        const wo=windowOpen||{s:false,p:false};
+        const base=wo.s&&wo.p?0:wo.s||wo.p?0.07:0.18;
+        const pulse=wo.s&&wo.p?0:wo.s||wo.p?0.03:0.10;
+        const alpha=base+pulse*Math.abs(Math.sin(frame*0.04));
+        if(alpha>0.01){cx.fillStyle=`rgba(255,110,10,${alpha})`;cx.fillRect(0,0,W,H);}
+      }
       if(activeEvent.type==='abv')drawABV(activeEvent);
       else if(activeEvent.type==='hausmeister')drawHausmeister(activeEvent);
       else if(activeEvent.type==='carmen')drawCarmen(activeEvent);
@@ -912,7 +938,7 @@ function draw(){
     if(eventWarnAge>0&&activeEvent){
       const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!',winkler:'⚠  HERR WINKLER!',hancke:'⚠  HERR HANCKE!'};
       const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)',winkler:'rgba(30,70,30,0.92)',hancke:'rgba(50,30,10,0.92)'};
-      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!',winkler:'Schnell ducken! (↓)',hancke:'Schnell ducken! − SCHWERER KERL!'};
+      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!',winkler:'Fenster öffnen! (↑ beim Fenster)',hancke:'Schnell ducken! − SCHWERER KERL!'};
       drawWarning(wt[activeEvent.type],wc[activeEvent.type],ws[activeEvent.type]);
     }
     if(state===ST.OVER)drawGameOver();
