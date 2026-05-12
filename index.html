@@ -204,7 +204,7 @@ const WINDOWS={s:{x:42,y:78,w:106,h:145},p:{x:490,y:78,w:106,h:145}};
 function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
-let players,pillows,particles,activeEvent,nextEvent,frame,shake,floodLevel,windowOpen,windowAnim;
+let players,pillows,particles,activeEvent,nextEvent,frame,shake,floodLevel,windowOpen,windowAnim,windowTimer;
 let cpuThrowTimer,cpuMoveDir,cpuMoveClock,cpuHideKey=false,eventWarnAge=0;
 
 function startGame(){
@@ -213,7 +213,7 @@ function startGame(){
     s:{x:160,y:FLOOR,vx:0,vy:0,onGround:true,dir:1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'s'},
     p:{x:560,y:FLOOR,vx:0,vy:0,onGround:true,dir:-1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'p'},
   };
-  pillows=[];particles=[];activeEvent=null;floodLevel=0;frame=0;shake=0;windowOpen={s:false,p:false};windowAnim={s:0,p:0};
+  pillows=[];particles=[];activeEvent=null;floodLevel=0;frame=0;shake=0;windowOpen={s:false,p:false};windowAnim={s:0,p:0};windowTimer={s:0,p:0};
   nextEvent=500+Math.random()*600;
   cpuThrowTimer=80+Math.random()*80;cpuMoveDir=0;cpuMoveClock=0;cpuHideKey=false;
   document.getElementById('scoreS').textContent='0';
@@ -241,7 +241,7 @@ function drawRoom(){
   for(const[side,win] of Object.entries(WINDOWS)){
     const anim=windowAnim?windowAnim[side]:0;
     const winklerActive=activeEvent&&activeEvent.type==='winkler';
-    drawWindowAnim(win,anim,true);
+    drawWindowAnim(win,anim);
     if(winklerActive&&anim<0.5&&activeEvent.phase==='patrol'){
       cx.save();cx.shadowColor='#ff8800';cx.shadowBlur=7+4*Math.abs(Math.sin(frame*0.1));
       cx.strokeStyle='#ff8800';cx.lineWidth=2;cx.strokeRect(win.x-2,win.y-2,win.w+4,win.h+4);cx.restore();
@@ -251,35 +251,58 @@ function drawRoom(){
   }
 }
 
-function drawWindowAnim(win,anim,showGlass){
+function drawWindowView(x,y,w,h){
+  cx.save();cx.beginPath();cx.rect(x,y,w,h);cx.clip();
+  // Sky
+  cx.fillStyle='#2e4a68';cx.fillRect(x,y,w,h);
+  cx.fillStyle='#3a5878';cx.fillRect(x,y,w,Math.round(h*0.52));
+  // Plattenbau silhouettes
+  const B=[[0,0.18,0.30,0.82,'#1a2430'],[0.28,0.30,0.24,0.70,'#1e2838'],[0.28,0.06,0.12,0.94,'#141c24'],[0.50,0.28,0.50,0.72,'#202c3a']];
+  for(const[rx,ry,rw,rh,col]of B){cx.fillStyle=col;cx.fillRect(x+rx*w,y+ry*h,rw*w,rh*h);}
+  // Lit windows (fixed pattern)
+  cx.fillStyle='rgba(255,210,80,0.85)';
+  [[0.03,0.22],[0.03,0.34],[0.03,0.46],[0.03,0.58],[0.13,0.22],[0.13,0.34],[0.13,0.46],[0.13,0.58],[0.21,0.22],[0.21,0.34],[0.21,0.46],
+   [0.29,0.09],[0.29,0.19],[0.29,0.29],[0.29,0.39],[0.29,0.49],[0.29,0.59],[0.29,0.69],
+   [0.52,0.32],[0.52,0.44],[0.52,0.56],[0.64,0.32],[0.64,0.44],[0.64,0.56],[0.76,0.32],[0.76,0.44],[0.76,0.56],[0.88,0.32],[0.88,0.44],[0.88,0.56]
+  ].forEach(([rx,ry])=>cx.fillRect(x+Math.round(rx*w),y+Math.round(ry*h),5,5));
+  cx.restore();
+}
+
+function drawWindowAnim(win,anim){
   const{x,y,w,h}=win;
   const hingeLeft=x<W/2;
   cx.save();
-  if(showGlass){
-    const fold=Math.cos(anim*Math.PI/2);
-    if(fold>0.02){
-      const pw=w*fold, skew=h*0.12*anim;
-      cx.beginPath();
-      if(hingeLeft){
-        cx.moveTo(x,y);cx.lineTo(x+pw,y+skew);cx.lineTo(x+pw,y+h-skew);cx.lineTo(x,y+h);
-      }else{
-        cx.moveTo(x+w,y);cx.lineTo(x+w-pw,y+skew);cx.lineTo(x+w-pw,y+h-skew);cx.lineTo(x+w,y+h);
-      }
-      cx.closePath();
-      const x0=hingeLeft?x:x+w, x1=hingeLeft?x+pw:x+w-pw;
-      const g=cx.createLinearGradient(x0,y,x1,y);
-      g.addColorStop(0,`rgba(160,225,255,${0.85-0.75*anim})`);
-      g.addColorStop(1,`rgba(100,185,245,${0.62-0.52*anim})`);
-      cx.fillStyle=g;cx.fill();
-      cx.fillStyle=`rgba(0,10,60,${0.28*anim})`;cx.fill();
-    }
+  // City view always visible through window opening
+  drawWindowView(x,y,w,h);
+  // Folding panel: glass + frame + cross move as one unit
+  const fold=Math.cos(anim*Math.PI/2);
+  if(fold>0.01){
+    const pw=w*fold,skew=h*0.12*anim;
+    let tl,tr,br,bl;
+    if(hingeLeft){tl=[x,y];tr=[x+pw,y+skew];br=[x+pw,y+h-skew];bl=[x,y+h];}
+    else{tl=[x+w-pw,y+skew];tr=[x+w,y];br=[x+w,y+h];bl=[x+w-pw,y+h-skew];}
+    // Glass fill
+    cx.beginPath();cx.moveTo(...tl);cx.lineTo(...tr);cx.lineTo(...br);cx.lineTo(...bl);cx.closePath();
+    const gx0=hingeLeft?x:x+w-pw,gx1=hingeLeft?x+pw:x+w;
+    const g=cx.createLinearGradient(gx0,y,gx1,y);
+    g.addColorStop(0,`rgba(160,225,255,${0.75-0.65*anim})`);
+    g.addColorStop(1,`rgba(100,185,245,${0.55-0.45*anim})`);
+    cx.fillStyle=g;cx.fill();
+    cx.fillStyle=`rgba(0,10,60,${0.22*anim})`;cx.fill();
+    // Frame outline transforms with panel
+    cx.beginPath();cx.moveTo(...tl);cx.lineTo(...tr);cx.lineTo(...br);cx.lineTo(...bl);cx.closePath();
+    cx.strokeStyle='#504030';cx.lineWidth=3;cx.stroke();
+    // Cross dividers also transform
+    const tmid=[(tl[0]+tr[0])/2,(tl[1]+tr[1])/2];
+    const bmid=[(bl[0]+br[0])/2,(bl[1]+br[1])/2];
+    const lmid=[(tl[0]+bl[0])/2,(tl[1]+bl[1])/2];
+    const rmid=[(tr[0]+br[0])/2,(tr[1]+br[1])/2];
+    cx.lineWidth=1.5;cx.beginPath();
+    cx.moveTo(...tmid);cx.lineTo(...bmid);
+    cx.moveTo(...lmid);cx.lineTo(...rmid);
+    cx.stroke();
   }
-  // Frame + cross always visible
-  cx.globalAlpha=1;cx.strokeStyle='#504030';cx.lineWidth=3;cx.strokeRect(x,y,w,h);
-  cx.lineWidth=1.5;cx.beginPath();
-  cx.moveTo(x+w/2,y);cx.lineTo(x+w/2,y+h);
-  cx.moveTo(x,y+h/2);cx.lineTo(x+w,y+h/2);
-  cx.stroke();cx.restore();
+  cx.restore();
 }
 
 function drawWin(x,y,w,h,cur){  rr(x,y,w,h,2,'#b8b0a0','#808070');
@@ -895,7 +918,7 @@ function updateEvent(){
     const t=types[~~(Math.random()*types.length)];
     const fromRight=t==='carmen'||(t==='winkler'||t==='hancke')&&Math.random()>0.5;
     activeEvent={type:t,progress:0,phase:'enter',x:fromRight?W+50:-60,dir:fromRight?-1:1,floodY:0};
-    if(t==='winkler'){windowOpen={s:false,p:false};if(windowAnim)windowAnim={s:0,p:0};}
+    if(t==='winkler'){windowOpen={s:false,p:false};if(windowAnim)windowAnim={s:0,p:0};if(windowTimer)windowTimer={s:0,p:0};}
     nextEvent=450+Math.random()*550;eventWarnAge=220;
     playSound(t==='teurich'?'teurich':t==='abv'?'abv':t==='hausmeister'?'hausmeister':t==='winkler'||t==='hancke'?'hausmeister':'carmen');
   }
@@ -921,7 +944,7 @@ function updateEvent(){
       }
     }
     if(ev.type==='carmen'){let t=setInterval(()=>{floodLevel=Math.max(0,floodLevel-0.015);if(floodLevel<=0)clearInterval(t);},60);}
-    if(ev.type==='winkler')windowOpen={s:false,p:false};
+    if(ev.type==='winkler'){windowOpen={s:false,p:false};windowTimer={s:0,p:0};}
     activeEvent=null;
   }
 }
@@ -984,7 +1007,14 @@ function loop(){
     }
     for(const[side,plr] of Object.entries(players)){
       const win=WINDOWS[side];
-      if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-30&&plr.x<=win.x+win.w+30){windowOpen[side]=true;}
+      if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-30&&plr.x<=win.x+win.w+30){windowOpen[side]=true;windowTimer[side]=0;}
+    }
+    // Auto-close windows after 240 frames (~4 sec)
+    if(windowTimer){
+      for(const side of['s','p']){
+        if(windowOpen[side]){windowTimer[side]++;if(windowTimer[side]>240){windowOpen[side]=false;windowTimer[side]=0;}}
+        else{windowTimer[side]=0;}
+      }
     }
   }
   draw();requestAnimationFrame(loop);
