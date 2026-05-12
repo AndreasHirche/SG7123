@@ -686,12 +686,13 @@ function drawSplash(){
   cx.fillStyle='#000000';cx.fillRect(W/2-220,titleY-26,440,38);
   cx.fillStyle='#00ffff';cx.font='bold 28px "Courier New",monospace';
   cx.fillText('LENINPLATZ  1987',W/2,titleY);
-  cx.fillStyle='#000000';cx.fillRect(W/2-215,titleY+7,430,28);
+  cx.fillStyle='#000000';cx.fillRect(W/2-215,titleY-3,430,28);
   cx.fillStyle='#c8a030';cx.font='18px "Courier New",monospace';
-  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,titleY+28);
+  cx.fillText('Vorwärts immer, rückwärts nimmer!',W/2,titleY+18);
   // Team selection header
+  cx.fillStyle='#000';cx.fillRect(W/2-170,56,340,16);
   cx.fillStyle='#a8c878';cx.font='bold 12px "Courier New",monospace';
-  cx.fillText('── WÄHLE DEINE SEITE ──',W/2,80);
+  cx.fillText('── WÄHLE DEINE SEITE ──',W/2,70);
   // Side cards
   drawSideCard(120,148,160,120,'s',humanSide==='s');
   drawSideCard(440,148,160,120,'p',humanSide==='p');
@@ -699,7 +700,7 @@ function drawSplash(){
   const ax=humanSide==='s'?200:520;
   if(Math.floor(blinkT/15)%2===0){
     cx.fillStyle=humanSide==='s'?'#d4a820':'#909090';
-    cx.font='16px "Courier New",monospace';cx.fillText('▼',ax,84);
+    cx.font='16px "Courier New",monospace';cx.fillText('▼',ax,74);
   }
   // Controls hint
   cx.textAlign='center';
