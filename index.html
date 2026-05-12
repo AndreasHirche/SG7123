@@ -237,11 +237,11 @@ function drawRoom(){
 
   drawBed(55,FLOOR,'left','#b89820');drawBed(665,FLOOR,'right','#c8c8c0');
 
-  // Windows – animated overlay on bg image
+  // Windows – always show frame, glass only during Winkler or while animating
   for(const[side,win] of Object.entries(WINDOWS)){
     const anim=windowAnim?windowAnim[side]:0;
     const winklerActive=activeEvent&&activeEvent.type==='winkler';
-    if(anim>0.01||winklerActive) drawWindowAnim(win,anim);
+    drawWindowAnim(win,anim,winklerActive||anim>0.01);
     if(winklerActive&&anim<0.5&&activeEvent.phase==='patrol'){
       cx.save();cx.shadowColor='#ff8800';cx.shadowBlur=7+4*Math.abs(Math.sin(frame*0.1));
       cx.strokeStyle='#ff8800';cx.lineWidth=2;cx.strokeRect(win.x-2,win.y-2,win.w+4,win.h+4);cx.restore();
@@ -249,35 +249,32 @@ function drawRoom(){
       cx.fillText('AUF! (↑)',win.x+win.w/2,win.y+win.h+14);cx.textAlign='left';
     }
   }
-
-  // Wappen an der Wand
-  const ww=80,wh=96;
-  drawWappenSachsen(W/4-ww/2+56,80,ww,wh);
-  drawWappenPreussen(3*W/4-ww/2-56,80,ww,wh);
 }
 
-function drawWindowAnim(win,anim){
+function drawWindowAnim(win,anim,showGlass){
   const{x,y,w,h}=win;
-  const fold=Math.cos(anim*Math.PI/2); // 1=closed, 0=fully open
   const hingeLeft=x<W/2;
   cx.save();
-  if(fold>0.02){
-    const pw=w*fold, skew=h*0.12*anim;
-    cx.beginPath();
-    if(hingeLeft){
-      cx.moveTo(x,y);cx.lineTo(x+pw,y+skew);cx.lineTo(x+pw,y+h-skew);cx.lineTo(x,y+h);
-    }else{
-      cx.moveTo(x+w,y);cx.lineTo(x+w-pw,y+skew);cx.lineTo(x+w-pw,y+h-skew);cx.lineTo(x+w,y+h);
+  if(showGlass){
+    const fold=Math.cos(anim*Math.PI/2);
+    if(fold>0.02){
+      const pw=w*fold, skew=h*0.12*anim;
+      cx.beginPath();
+      if(hingeLeft){
+        cx.moveTo(x,y);cx.lineTo(x+pw,y+skew);cx.lineTo(x+pw,y+h-skew);cx.lineTo(x,y+h);
+      }else{
+        cx.moveTo(x+w,y);cx.lineTo(x+w-pw,y+skew);cx.lineTo(x+w-pw,y+h-skew);cx.lineTo(x+w,y+h);
+      }
+      cx.closePath();
+      const x0=hingeLeft?x:x+w, x1=hingeLeft?x+pw:x+w-pw;
+      const g=cx.createLinearGradient(x0,y,x1,y);
+      g.addColorStop(0,`rgba(160,225,255,${0.85-0.75*anim})`);
+      g.addColorStop(1,`rgba(100,185,245,${0.62-0.52*anim})`);
+      cx.fillStyle=g;cx.fill();
+      cx.fillStyle=`rgba(0,10,60,${0.28*anim})`;cx.fill();
     }
-    cx.closePath();
-    const x0=hingeLeft?x:x+w, x1=hingeLeft?x+pw:x+w-pw;
-    const g=cx.createLinearGradient(x0,y,x1,y);
-    g.addColorStop(0,`rgba(160,225,255,${0.85-0.75*anim})`);
-    g.addColorStop(1,`rgba(100,185,245,${0.62-0.52*anim})`);
-    cx.fillStyle=g;cx.fill();
-    cx.fillStyle=`rgba(0,10,60,${0.28*anim})`;cx.fill();
   }
-  // Frame + cross
+  // Frame + cross always visible
   cx.globalAlpha=1;cx.strokeStyle='#504030';cx.lineWidth=3;cx.strokeRect(x,y,w,h);
   cx.lineWidth=1.5;cx.beginPath();
   cx.moveTo(x+w/2,y);cx.lineTo(x+w/2,y+h);
