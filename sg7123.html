@@ -719,7 +719,6 @@ let blinkT=0;
 function drawSideCard(x,y,w,h,side,sel){
   const ac=side==='s'?'#d4a820':'#909090',bg=side==='s'?(sel?'#231c08':'#1a1408'):(sel?'#151515':'#101010');
   cx.save();
-  if(!sel)cx.globalAlpha=0.42;
   if(sel){
     const pulse=12+8*Math.abs(Math.sin(blinkT*0.07));
     cx.shadowColor=ac;cx.shadowBlur=pulse;
@@ -727,13 +726,17 @@ function drawSideCard(x,y,w,h,side,sel){
     cx.beginPath();cx.roundRect(x-2,y-2,w+4,h+4,6);cx.stroke();
     cx.shadowColor='transparent';cx.shadowBlur=0;
   }
-  rr(x,y,w,h,4,bg,sel?ac:'#2a3820');
-  cx.textAlign='center';cx.fillStyle=sel?ac:'#506040';cx.font='bold 20px Courier New';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
+  rr(x,y,w,h,4,bg,sel?ac:'#4a5a38');
+  cx.textAlign='center';
+  const nameW=cx.measureText(side==='s'?'SACHSEN':'PREUßEN').width+14;
+  cx.font='bold 20px Courier New';
+  cx.fillStyle='#000';cx.fillRect(x+w/2-nameW/2,y+14,nameW,20);
+  cx.fillStyle=sel?ac:'#8aaa70';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
   const ww=72,wh=86;const wx=x+w/2-ww/2,wy=y+42;
   if(side==='s')drawWappenSachsen(wx,wy,ww,wh);
   else drawWappenPreussen(wx,wy,ww,wh);
   if(sel){cx.fillStyle=side==='s'?'#d4a820':'#a0b8c8';cx.font='bold 15px Courier New';cx.fillText('► DU ◄',x+w/2,y+h-10);}
-  else{cx.fillStyle='#404040';cx.font='11px Courier New';cx.fillText('[ KI ]',x+w/2,y+h-10);}
+  else{cx.fillStyle='#606050';cx.font='11px Courier New';cx.fillText('[ KI ]',x+w/2,y+h-10);}
   cx.textAlign='left';cx.restore();
 }
 
