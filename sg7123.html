@@ -7,14 +7,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <title>Leninplatz 1987</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%23cc1500'/><text x='32' y='46' font-family='monospace' font-size='28' font-weight='bold' fill='%23ffd700' text-anchor='middle'>LP</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#1a1208;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;font-family:'Courier New',monospace;color:#d4c89a;overflow:hidden;user-select:none;touch-action:none}
+body{background:#1a1208;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;font-family:'VT323','Courier New',monospace;color:#d4c89a;overflow:hidden;user-select:none;touch-action:none}
 canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;max-height:60dvh;width:auto;height:auto}
-#hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:5px 14px;background:#0a0a06;border:2px solid #5a4a28;border-bottom:none;border-radius:3px 3px 0 0;font-size:1rem;letter-spacing:0.08em}
-#info{max-width:720px;width:100%;padding:4px 14px;background:#0a0a06;border:2px solid #5a4a28;border-top:1px solid #1e1a0e;border-radius:0 0 3px 3px;font-size:1rem;color:#6a5e3a;text-align:center;letter-spacing:0.08em}
+#hud{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:720px;padding:5px 14px;background:#0a0a06;border:2px solid #5a4a28;border-bottom:none;border-radius:3px 3px 0 0;font-size:1.15rem;letter-spacing:0.08em}
+#info{max-width:720px;width:100%;padding:4px 14px;background:#0a0a06;border:2px solid #5a4a28;border-top:1px solid #1e1a0e;border-radius:0 0 3px 3px;font-size:1.1rem;color:#6a5e3a;text-align:center;letter-spacing:0.06em}
 .pts-s{color:#d4a820;font-weight:700;font-size:1.05rem}
 .pts-p{color:#b0b8b0;font-weight:700;font-size:1.05rem}
 #title-bar{color:#cc1500;font-size:1.25rem;text-align:center;flex:1;letter-spacing:0.15em;font-weight:700}
@@ -22,7 +24,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 #tc-left,#tc-right{display:flex;align-items:center;justify-content:center}
 .dpad{display:grid;grid-template-columns:repeat(3,clamp(44px,11vw,56px));grid-auto-rows:clamp(44px,11vw,56px);gap:3px}
 .dpad>span{display:block}
-.tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
+.tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'VT323','Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
 .dpad .tc{width:100%;height:100%}
 .dpad .tc svg{width:55%;height:55%}
 .tc-throw svg{width:100%;height:100%}
