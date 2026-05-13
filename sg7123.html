@@ -200,7 +200,7 @@ const CC={
 const WIN_SCORE=40;
 const BED_H=32;
 const BEDS={s:{x1:55,x2:163},p:{x1:557,x2:665}};
-const WINDOWS={s:{x:183,y:58,w:88,h:118},p:{x:448,y:58,w:88,h:118}};
+const WINDOWS={s:{x:200,y:78,w:88,h:98},p:{x:452,y:78,w:88,h:98}};
 function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
@@ -1044,7 +1044,7 @@ function loop(){
     }
     for(const[side,plr] of Object.entries(players)){
       const win=WINDOWS[side];
-      if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x-30&&plr.x<=win.x+win.w+30){windowOpen[side]=true;windowTimer[side]=0;}
+      if(!windowOpen[side]&&!plr.onGround&&plr.x>=win.x&&plr.x<=win.x+win.w){windowOpen[side]=true;windowTimer[side]=0;}
     }
     // Auto-close windows after 240 frames (~4 sec)
     if(windowTimer){
