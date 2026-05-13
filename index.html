@@ -742,7 +742,7 @@ function drawHideBar(plr){
 var _splashImg=null;
 (function(){var i=new Image();i.onload=function(){_splashImg=i;};i.src='LP_splash.png';})();
 var _bgImg=null;
-(function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer5.png';})();
+(function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer6.png';})();
 
 // ── Wappen ────────────────────────────────────────────────────────────────
 function _shieldClip(x,y,w,h){
@@ -771,10 +771,10 @@ function drawWappenPreussen(x,y,w,h){
 function drawSplash(){
   blinkT++;
   // Background
-  cx.fillStyle='#0a0e06';cx.fillRect(0,0,W,H);
+  cx.fillStyle='#1e2a14';cx.fillRect(0,0,W,H);
   if(_splashImg){cx.drawImage(_splashImg,0,65,W,H-65);}
-  cx.fillStyle='rgba(0,0,0,0.34)';cx.fillRect(0,65,W,H-65);
-  for(let sy=0;sy<H;sy+=2){cx.fillStyle='rgba(0,0,0,0.22)';cx.fillRect(0,sy,W,1);}
+  cx.fillStyle='rgba(0,0,0,0.12)';cx.fillRect(0,65,W,H-65);
+  for(let sy=0;sy<H;sy+=2){cx.fillStyle='rgba(0,0,0,0.10)';cx.fillRect(0,sy,W,1);}
   // ZX border
   const zxCols=['#ff0000','#ffff00','#00ffff','#00ff00','#ff00ff','#0000ff'];
   const bc=zxCols[Math.floor(blinkT/8)%zxCols.length];
