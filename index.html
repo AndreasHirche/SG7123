@@ -76,7 +76,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 </div>
 
 <script>
-const VERSION='v1.5-dev';
+const VERSION='v2.0';
 const cv=document.getElementById('c');
 const cx=cv.getContext('2d');
 const W=720, H=400, FLOOR=H-62, WALL_SPLIT=FLOOR-155;
@@ -200,7 +200,7 @@ const CC={
 const WIN_SCORE=40;
 const BED_H=32;
 const BEDS={s:{x1:55,x2:163},p:{x1:557,x2:665}};
-const WINDOWS={s:{x:175,y:78,w:106,h:145},p:{x:440,y:78,w:106,h:145}};
+const WINDOWS={s:{x:183,y:58,w:88,h:118},p:{x:448,y:58,w:88,h:118}};
 function isOnBed(plr){const b=BEDS[plr.side];return plr.y<=FLOOR-BED_H+4&&plr.x>=b.x1&&plr.x<=b.x2;}
 
 // ── Game objects ──────────────────────────────────────────────────────────
@@ -740,9 +740,9 @@ function drawHideBar(plr){
 
 // ── Splash image ─────────────────────────────────────────────────────────
 var _splashImg=null;
-(function(){var i=new Image();i.onload=function(){_splashImg=i;};i.src='LePl2.png';})();
+(function(){var i=new Image();i.onload=function(){_splashImg=i;};i.src='LP_splash.png';})();
 var _bgImg=null;
-(function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer4.png';})();
+(function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer5.png';})();
 
 // ── Wappen ────────────────────────────────────────────────────────────────
 function _shieldClip(x,y,w,h){
