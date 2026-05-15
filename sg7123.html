@@ -22,11 +22,9 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 #title-bar{color:#cc1500;font-size:1.25rem;text-align:center;flex:1;letter-spacing:0.15em;font-weight:700}
 #touch-ctrl{display:none;width:100%;max-width:720px;padding:8px 10px;justify-content:space-between;align-items:center}
 #tc-left,#tc-right{display:flex;align-items:center;justify-content:center}
-.dpad{display:grid;grid-template-columns:repeat(3,clamp(44px,11vw,56px));grid-auto-rows:clamp(44px,11vw,56px);gap:3px}
-.dpad>span{display:block}
+#joystick-base{width:clamp(90px,22vw,110px);height:clamp(90px,22vw,110px);background:rgba(26,20,8,0.7);border:2px solid #5a4a28;border-radius:50%;position:relative;touch-action:none;flex-shrink:0}
+#joystick-knob{width:42px;height:42px;background:#3a2808;border:2px solid #c8a030;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
 .tc{background:#1a1408;border:2px solid #5a4a28;border-radius:8px;color:#c8b060;font-family:'VT323','Courier New',monospace;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none}
-.dpad .tc{width:100%;height:100%}
-.dpad .tc svg{width:55%;height:55%}
 .tc-throw svg{width:100%;height:100%}
 .tc:active,.tc.on{background:#3a2808;border-color:#c8a030}
 .tc-throw{width:90px!important;height:54px!important;border-radius:0!important;padding:2px;
@@ -37,7 +35,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   #hud{max-width:none;border-radius:0;border-left:none;border-right:none;font-size:0.9rem;padding:5px 10px}
   canvas{border-left:none;border-right:none;border-top:none;border-radius:0;flex-shrink:0}
   #touch-ctrl{margin-top:auto;max-width:none;padding:14px 16px 28px}
-  .dpad{grid-template-columns:repeat(3,clamp(52px,14vw,68px))!important;grid-auto-rows:clamp(52px,14vw,68px)!important;gap:5px!important}
+  #joystick-base{width:clamp(100px,24vw,124px)!important;height:clamp(100px,24vw,124px)!important}
   .tc-throw{width:100px!important;height:60px!important;
     clip-path:path('M 0,0 Q 50,12 100,0 Q 82,30 100,60 Q 50,54 0,60 Q 18,30 0,0 Z')!important}
 }
@@ -48,7 +46,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
   #touch-ctrl{display:contents!important}
   #tc-left{display:flex!important;order:-1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
   #tc-right{display:flex!important;order:1;width:120px;height:100dvh;align-items:center;justify-content:center;flex-shrink:0}
-  .dpad{grid-template-columns:repeat(3,36px)!important;grid-auto-rows:36px!important;gap:4px!important}
+  #joystick-base{width:80px!important;height:80px!important}
   .tc-throw{width:76px!important;height:46px!important;
     clip-path:path('M 0,0 Q 38,9 76,0 Q 62,23 76,46 Q 38,37 0,46 Q 14,23 0,0 Z')!important}
 }
@@ -64,11 +62,7 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
 <div id="info">← → Bewegen &nbsp;|&nbsp; LEERTASTE <svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round" style="width:1.8em;height:1.1em;vertical-align:middle"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg> Werfen &nbsp;/&nbsp; Bestätigen &nbsp;|&nbsp; ↑ Springen &nbsp;|&nbsp; ↓ Ducken</div>
 <div id="touch-ctrl">
   <div id="tc-left">
-    <div class="dpad">
-      <span></span><button class="tc" id="tc-up"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26 L16 7 M8 15 L16 7 L24 15"/></svg></button><span></span>
-      <button class="tc" id="tc-l"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M25 16 L7 16 M15 8 L7 16 L15 24"/></svg></button><span></span><button class="tc" id="tc-r"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16 L25 16 M17 8 L25 16 L17 24"/></svg></button>
-      <span></span><button class="tc" id="tc-s"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 6 L16 25 M8 17 L16 25 L24 17"/></svg></button><span></span>
-    </div>
+    <div id="joystick-base"><div id="joystick-knob"></div></div>
   </div>
   <div id="tc-right">
     <button class="tc tc-throw" id="tc-w"><svg viewBox="0 0 90 54" fill="none" stroke="currentColor" stroke-linecap="round"><path stroke-width="2.5" d="M 2,1 Q 45,12 88,1 Q 74,27 88,53 Q 45,42 2,53 Q 16,27 2,1 Z"/><path stroke-width="1.5" d="M 8,7 Q 45,18 82,7"/><path stroke-width="1.5" d="M 8,47 Q 45,36 82,47"/></svg></button>
@@ -139,22 +133,61 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>K[e.code]=false);
 
 // Touch controls
-['tc-l','tc-r','tc-w','tc-s','tc-up'].forEach(id=>{
-  const btn=document.getElementById(id);if(!btn)return;
-  const code={'tc-l':'ArrowLeft','tc-r':'ArrowRight','tc-w':'Space','tc-s':'ArrowDown','tc-up':'ArrowUp'}[id];
-  btn.addEventListener('touchstart',e=>{
-    K[code]=true;btn.classList.add('on');e.preventDefault();
+// Throw button
+(function(){
+  const btn=document.getElementById('tc-w');if(!btn)return;
+  btn.addEventListener('touchstart',e=>{K['Space']=true;btn.classList.add('on');e.preventDefault();},{passive:false});
+  btn.addEventListener('touchend',e=>{K['Space']=false;btn.classList.remove('on');e.preventDefault();if(state===ST.SPLASH)startGame();if(state===ST.OVER)state=ST.SPLASH;},{passive:false});
+})();
+
+// Virtual joystick
+(function(){
+  const base=document.getElementById('joystick-base');
+  const knob=document.getElementById('joystick-knob');
+  if(!base||!knob)return;
+  let activeId=null,bx=0,by=0,br=55;
+  function joyKeys(dx,dy,dist){
+    K['ArrowLeft']=K['ArrowRight']=K['ArrowUp']=K['ArrowDown']=false;
+    if(dist<br*0.22)return;
+    const nx=dx/dist,ny=dy/dist;
+    if(nx>0.4)K['ArrowRight']=true;
+    if(nx<-0.4)K['ArrowLeft']=true;
+    if(ny<-0.4)K['ArrowUp']=true;
+    if(ny>0.55)K['ArrowDown']=true;
+  }
+  function updateJoy(cx,cy){
+    const dx=cx-bx,dy=cy-by,dist=Math.sqrt(dx*dx+dy*dy);
+    const r=Math.min(dist,br*0.55),a=Math.atan2(dy,dx);
+    knob.style.transform=`translate(calc(-50% + ${Math.cos(a)*r}px),calc(-50% + ${Math.sin(a)*r}px))`;
+    joyKeys(dx,dy,dist);
     if(state===ST.SPLASH){
-      if(id==='tc-l'||id==='tc-r'){humanSide=id==='tc-l'?'s':'p';cpuSide=humanSide==='s'?'p':'s';}
-      return;
+      if(K['ArrowLeft']){humanSide='s';cpuSide='p';}
+      if(K['ArrowRight']){humanSide='p';cpuSide='s';}
     }
+  }
+  function reset(){
+    knob.style.transform='translate(-50%,-50%)';
+    K['ArrowLeft']=K['ArrowRight']=K['ArrowUp']=K['ArrowDown']=false;
+    activeId=null;
+  }
+  base.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const t=e.changedTouches[0];activeId=t.identifier;
+    const rect=base.getBoundingClientRect();
+    bx=rect.left+rect.width/2;by=rect.top+rect.height/2;br=rect.width/2;
+    updateJoy(t.clientX,t.clientY);
   },{passive:false});
-  btn.addEventListener('touchend',e=>{
-    K[code]=false;btn.classList.remove('on');e.preventDefault();
-    if(state===ST.SPLASH&&id==='tc-w'){startGame();}
-    if(state===ST.OVER){state=ST.SPLASH;}
+  base.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches)if(t.identifier===activeId){updateJoy(t.clientX,t.clientY);break;}
   },{passive:false});
-});
+  base.addEventListener('touchend',e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches)if(t.identifier===activeId){reset();break;}
+    if(state===ST.OVER)state=ST.SPLASH;
+  },{passive:false});
+  base.addEventListener('touchcancel',()=>reset(),{passive:true});
+})();
 
 // Fullscreen on first touch (Android Chrome)
 document.addEventListener('touchstart',function fs(){
