@@ -776,6 +776,10 @@ var _splashImg=null;
 (function(){var i=new Image();i.onload=function(){_splashImg=i;};i.src='LP_splash.png';})();
 var _bgImg=null;
 (function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer6.png';})();
+var _imgS=null;
+(function(){var i=new Image();i.onload=function(){_imgS=i;};i.src='S.png';})();
+var _imgP=null;
+(function(){var i=new Image();i.onload=function(){_imgP=i;};i.src='P.png';})();
 
 // ── Wappen ────────────────────────────────────────────────────────────────
 function _shieldClip(x,y,w,h){
@@ -785,17 +789,15 @@ function _shieldClip(x,y,w,h){
 }
 function drawWappenSachsen(x,y,w,h){
   cx.save();_shieldClip(x,y,w,h);cx.clip();
-  cx.fillStyle='#2a7a2a';cx.fillRect(x,y,w,h);
-  cx.fillStyle='#f5c030';cx.font=`bold ${Math.round(h*0.62)}px serif`;
-  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('S',x+w/2,y+h*0.46);
+  if(_imgS){cx.drawImage(_imgS,x,y,w,h);}
+  else{cx.fillStyle='#2a7a2a';cx.fillRect(x,y,w,h);cx.fillStyle='#f5c030';cx.font=`bold ${Math.round(h*0.62)}px serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('S',x+w/2,y+h*0.46);}
   cx.restore();cx.save();_shieldClip(x,y,w,h);
   cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
 }
 function drawWappenPreussen(x,y,w,h){
   cx.save();_shieldClip(x,y,w,h);cx.clip();
-  cx.fillStyle='#e8e8e0';cx.fillRect(x,y,w,h);
-  cx.fillStyle='#1a1a1a';cx.font=`bold ${Math.round(h*0.62)}px serif`;
-  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('P',x+w/2,y+h*0.46);
+  if(_imgP){cx.drawImage(_imgP,x,y,w,h);}
+  else{cx.fillStyle='#e8e8e0';cx.fillRect(x,y,w,h);cx.fillStyle='#1a1a1a';cx.font=`bold ${Math.round(h*0.62)}px serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('P',x+w/2,y+h*0.46);}
   cx.restore();cx.save();_shieldClip(x,y,w,h);
   cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
 }
