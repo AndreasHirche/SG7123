@@ -776,28 +776,19 @@ var _splashImg=null;
 (function(){var i=new Image();i.onload=function(){_splashImg=i;};i.src='LP_splash.png';})();
 var _bgImg=null;
 (function(){var i=new Image();i.onload=function(){_bgImg=i;};i.src='zimmer6.png';})();
+var _imgS=null;
+(function(){var i=new Image();i.onload=function(){_imgS=i;};i.src='S.png';})();
+var _imgP=null;
+(function(){var i=new Image();i.onload=function(){_imgP=i;};i.src='P.png';})();
 
 // ── Wappen ────────────────────────────────────────────────────────────────
-function _shieldClip(x,y,w,h){
-  cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+w,y);cx.lineTo(x+w,y+h*0.65);
-  cx.quadraticCurveTo(x+w,y+h*0.88,x+w/2,y+h);
-  cx.quadraticCurveTo(x,y+h*0.88,x,y+h*0.65);cx.closePath();
-}
 function drawWappenSachsen(x,y,w,h){
-  cx.save();_shieldClip(x,y,w,h);cx.clip();
-  cx.fillStyle='#2a7a2a';cx.fillRect(x,y,w,h);
-  cx.fillStyle='#f5c030';cx.font=`bold ${Math.round(h*0.62)}px serif`;
-  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('S',x+w/2,y+h*0.46);
-  cx.restore();cx.save();_shieldClip(x,y,w,h);
-  cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
+  if(_imgS){cx.drawImage(_imgS,x,y,w,h);}
+  else{cx.fillStyle='#2a7a2a';cx.fillRect(x,y,w,h);cx.fillStyle='#f5c030';cx.font=`bold ${Math.round(h*0.62)}px serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('S',x+w/2,y+h*0.46);cx.textBaseline='alphabetic';}
 }
 function drawWappenPreussen(x,y,w,h){
-  cx.save();_shieldClip(x,y,w,h);cx.clip();
-  cx.fillStyle='#e8e8e0';cx.fillRect(x,y,w,h);
-  cx.fillStyle='#1a1a1a';cx.font=`bold ${Math.round(h*0.62)}px serif`;
-  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('P',x+w/2,y+h*0.46);
-  cx.restore();cx.save();_shieldClip(x,y,w,h);
-  cx.strokeStyle='#606060';cx.lineWidth=1.5;cx.stroke();cx.restore();
+  if(_imgP){cx.drawImage(_imgP,x,y,w,h);}
+  else{cx.fillStyle='#e8e8e0';cx.fillRect(x,y,w,h);cx.fillStyle='#1a1a1a';cx.font=`bold ${Math.round(h*0.62)}px serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('P',x+w/2,y+h*0.46);cx.textBaseline='alphabetic';}
 }
 
 // ── Splash Screen (+ team selection) ─────────────────────────────────────
@@ -859,11 +850,7 @@ function drawSideCard(x,y,w,h,side,sel){
   }
   rr(x,y,w,h,4,bg,sel?ac:'#4a5a38');
   cx.textAlign='center';
-  const nameW=cx.measureText(side==='s'?'SACHSEN':'PREUßEN').width+14;
-  cx.font='bold 20px Courier New';
-  cx.fillStyle='#000';cx.fillRect(x+w/2-nameW/2,y+14,nameW,20);
-  cx.fillStyle=sel?ac:'#8aaa70';cx.fillText(side==='s'?'SACHSEN':'PREUßEN',x+w/2,y+32);
-  const ww=72,wh=86;const wx=x+w/2-ww/2,wy=y+42;
+  const ww=82,wh=96;const wx=x+w/2-ww/2,wy=y+6;
   if(side==='s')drawWappenSachsen(wx,wy,ww,wh);
   else drawWappenPreussen(wx,wy,ww,wh);
   if(sel){cx.fillStyle=side==='s'?'#d4a820':'#a0b8c8';cx.font='bold 15px Courier New';cx.fillText('► DU ◄',x+w/2,y+h-10);}
