@@ -912,12 +912,15 @@ function updateCPU(){
 }
 
 // ── Input ──────────────────────────────────────────────────────────────────
+let _upWasDown=false;
 function handleHuman(){
   const p=players[humanSide];p.vx=0;
   if(K['ArrowLeft']&&!p.hiding){p.vx=-2.8;p.dir=-1;}
   if(K['ArrowRight']&&!p.hiding){p.vx=2.8;p.dir=1;}
   if(K['Space']&&!p.hiding&&p.throwCD<=0)throwPillow(p);
-  if(K['ArrowUp']&&p.onGround&&!p.hiding){p.vy=-8;p.onGround=false;}
+  const upNow=!!K['ArrowUp'];
+  if(upNow&&!_upWasDown&&p.onGround&&!p.hiding){p.vy=-8;p.onGround=false;}
+  _upWasDown=upNow;
   if(K['ArrowDown']&&p.onGround){p.hideAnim=Math.min(1,p.hideAnim+0.1);p.hiding=p.hideAnim>0.5;}
   else if(p.onGround){p.hideAnim=Math.max(0,p.hideAnim-0.08);p.hiding=false;}
 }
@@ -1051,7 +1054,10 @@ function draw(){
 }
 
 // ── Loop ────────────────────────────────────────────────────────────────────
-function loop(){
+let _lastTs=0;
+function loop(ts){
+  if(ts-_lastTs<15.9){requestAnimationFrame(loop);return;}
+  _lastTs=ts;
   frame++;if(shake>0)shake-=0.35;
   if(state===ST.PLAY){
     handleHuman();updateCPU();updatePhysics();updateEvent();
@@ -1076,7 +1082,7 @@ function loop(){
   }
   draw();requestAnimationFrame(loop);
 }
-loop();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
