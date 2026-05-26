@@ -1,7 +1,7 @@
 {
   "name": "Leninplatz 1987",
   "short_name": "LP1987",
-  "start_url": "sg7123.html",
+  "start_url": "index.html",
   "display": "fullscreen",
   "orientation": "any",
   "background_color": "#0e0e08",
