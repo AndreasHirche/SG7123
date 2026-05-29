@@ -127,7 +127,8 @@ function playMelody(mode){
 
       if(mode==='game'){
         // Pattern: B . . . t . . B . . B . t . . .  (16 sixteenths)
-        const sixteenth=0.25/speed;
+        // sixteenth at melody tempo (122 BPM), scaled by speed
+        const sixteenth=60/(122*4*speed);
         const barLen=16*sixteenth;
         const barPattern=[
           {t: 0*sixteenth, snare:false},
