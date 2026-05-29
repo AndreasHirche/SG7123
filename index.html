@@ -130,6 +130,8 @@ function playMelody(mode){
         // sixteenth at melody tempo (122 BPM), scaled by speed
         const sixteenth=60/(122*4*speed);
         const barLen=16*sixteenth;
+        // first bumm lands on note 3 (raw offset 0.738s)
+        const rhythmStart=loopStart+0.738/speed;
         const barPattern=[
           {t: 0*sixteenth, snare:false},
           {t: 4*sixteenth, snare:true },
@@ -139,7 +141,7 @@ function playMelody(mode){
         ];
         const bars=Math.ceil(dur/barLen)+1;
         for(let bar=0;bar<bars;bar++){
-          const barStart=loopStart+bar*barLen;
+          const barStart=rhythmStart+bar*barLen;
           for(const{t,snare}of barPattern){
             if(cancelled)return;
             const bt=barStart+t;
