@@ -126,30 +126,40 @@ function playMelody(mode){
       gainMaster.connect(a.destination);
 
       if(mode==='game'){
-        // bumm, ts, bumm, bumm, ts (5-beat pattern)
+        // bumm(0), ts(0.5), bumm(1.0), bumm(1.25), ts(1.5) — bar = 2.0 beats
         const beatLen=0.5/speed;
-        const beats=Math.ceil(dur/beatLen);
-        for(let b=0;b<beats;b++){
-          if(cancelled)return;
-          const bt=loopStart+b*beatLen;
-          const isSnare=b%5===1||b%5===4;
-          if(isSnare){
-            // ts: white noise burst
-            const buf=a.createBuffer(1,Math.floor(a.sampleRate*0.12),a.sampleRate);
-            const d=buf.getChannelData(0);
-            for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*0.035));
-            const src=a.createBufferSource();src.buffer=buf;
-            _melodyActiveNodes.push(src);
-            const g2=a.createGain();g2.gain.setValueAtTime(0.65,bt);g2.gain.exponentialRampToValueAtTime(0.001,bt+0.12);
-            src.connect(g2);g2.connect(a.destination);src.start(bt);
-          }else{
-            // bumm: low kick
-            const os=a.createOscillator();os.type='sine';
-            _melodyActiveNodes.push(os);
-            const g2=a.createGain();os.connect(g2);g2.connect(a.destination);
-            os.frequency.setValueAtTime(140,bt);os.frequency.exponentialRampToValueAtTime(40,bt+0.12);
-            g2.gain.setValueAtTime(1.0,bt);g2.gain.exponentialRampToValueAtTime(0.001,bt+0.22);
-            os.start(bt);os.stop(bt+0.25);
+        const barLen=2.0/speed;
+        // offsets within one bar (in beats * beatLen)
+        const barPattern=[
+          {t:0*beatLen,   snare:false},
+          {t:1*beatLen,   snare:true },
+          {t:2*beatLen,   snare:false},
+          {t:2.5*beatLen, snare:false},
+          {t:3*beatLen,   snare:true },
+        ];
+        const bars=Math.ceil(dur/barLen)+1;
+        for(let bar=0;bar<bars;bar++){
+          const barStart=loopStart+bar*barLen;
+          for(const{t,snare}of barPattern){
+            if(cancelled)return;
+            const bt=barStart+t;
+            if(bt>loopStart+dur+0.1)break;
+            if(snare){
+              const buf=a.createBuffer(1,Math.floor(a.sampleRate*0.12),a.sampleRate);
+              const d=buf.getChannelData(0);
+              for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*0.035));
+              const src=a.createBufferSource();src.buffer=buf;
+              _melodyActiveNodes.push(src);
+              const g2=a.createGain();g2.gain.setValueAtTime(0.65,bt);g2.gain.exponentialRampToValueAtTime(0.001,bt+0.12);
+              src.connect(g2);g2.connect(a.destination);src.start(bt);
+            }else{
+              const os=a.createOscillator();os.type='sine';
+              _melodyActiveNodes.push(os);
+              const g2=a.createGain();os.connect(g2);g2.connect(a.destination);
+              os.frequency.setValueAtTime(140,bt);os.frequency.exponentialRampToValueAtTime(40,bt+0.12);
+              g2.gain.setValueAtTime(1.0,bt);g2.gain.exponentialRampToValueAtTime(0.001,bt+0.22);
+              os.start(bt);os.stop(bt+0.25);
+            }
           }
         }
       }
