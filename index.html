@@ -79,17 +79,20 @@ const W=720, H=400, FLOOR=H-62, WALL_SPLIT=FLOOR-155;
 let _ac=null;
 function ac(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
 
-// "Von den blauen Bergen kommen wir" — [freq_hz, duration_beats], G-Dur 3/4
-// H=B3=247, d=D4=294, e=E4=330, g=G4=392  (Großbuchstabe = tiefe Oktave)
-// "-" = halbe Note (2 Schläge), ohne = Viertelnote (1 Schlag), 0=Pause
+// "Von den blauen Bergen kommen wir" — from MIDI melodie.txt
+// Format: [freq_hz, start_sec, duration_sec]  (absolute timing, not beats)
 const BLAUE_BERGE=[
-  // "Von den blau-en Ber-gen kom-men wir" + Pause
-  [247,2],[294,1], // H- d
-  [392,1],[392,1], // g  g
-  [330,2],[294,2], // e- d-
-  [247,2],[294,1], // H- d
-  [392,2],[0,1],   // g  (Pause)
+  [261.6,0.000,0.125],[261.6,0.133,0.125],
+  [349.2,0.258,0.500],[349.2,0.758,0.125],[392.0,0.892,0.125],[440.0,1.025,0.125],[349.2,1.158,0.125],
+  [440.0,1.283,0.700],[440.0,1.983,0.125],[466.2,2.117,0.125],
+  [523.3,2.242,0.700],[523.3,2.942,0.125],[466.2,3.075,0.125],[440.0,3.208,0.125],[392.0,3.342,0.125],
+  [440.0,3.467,0.700],[233.1,4.167,0.125],[440.0,4.300,0.125],
+  [523.3,4.425,0.125],[523.3,4.558,0.125],[466.2,4.692,0.125],[440.0,4.825,0.125],[392.0,4.958,0.125],[440.0,5.092,0.125],[466.2,5.225,0.125],
+  [587.3,5.350,0.125],[466.2,5.483,0.125],[587.3,5.617,0.125],[523.3,5.750,0.125],[466.2,5.883,0.125],[392.0,6.017,0.125],
+  [440.0,6.142,0.125],[349.2,6.275,0.125],[392.0,6.408,0.125],[440.0,6.542,0.125],[466.2,6.675,0.125],[392.0,6.808,0.125],
+  [349.2,6.933,0.700],
 ];
+const MELODY_DURATION=7.633; // total loop length in seconds
 
 let _melodyStop=null;
 
@@ -101,56 +104,51 @@ function playMelody(mode){
   stopMelody();
   try{
     const a=ac();
-    const bps=(mode==='game'?116:100)/60; // slightly faster in-game
     let cancelled=false;
     _melodyStop=()=>{cancelled=true;};
 
     function playLoop(loopStart){
       if(cancelled)return;
-      let t=loopStart;
       const gainMaster=a.createGain();
-      gainMaster.gain.setValueAtTime(mode==='splash'?0.18:0.12,t);
+      gainMaster.gain.setValueAtTime(mode==='splash'?0.18:0.12,loopStart);
       gainMaster.connect(a.destination);
 
       if(mode==='game'){
-        // Rhythm: bass drum kick on every beat
-        BLAUE_BERGE.forEach(([,dur])=>{
-          for(let b=0;b<dur;b++){
-            if(cancelled)return;
-            const buf=a.createBuffer(1,a.sampleRate*0.08,a.sampleRate);
-            const d=buf.getChannelData(0);
-            for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*0.012));
-            const src=a.createBufferSource();src.buffer=buf;
-            const g2=a.createGain();g2.gain.setValueAtTime(0.35,t+b/bps);g2.gain.exponentialRampToValueAtTime(0.001,t+b/bps+0.08);
-            src.connect(g2);g2.connect(a.destination);
-            src.start(t+b/bps);
-          }
-          t+=dur/bps;
-        });
-        t=loopStart; // reset for melody overlay
+        // Rhythm: kick on beat (every 0.5s at BPM 120)
+        const beats=Math.ceil(MELODY_DURATION/0.5);
+        for(let b=0;b<beats;b++){
+          if(cancelled)return;
+          const bt=loopStart+b*0.5;
+          const buf=a.createBuffer(1,a.sampleRate*0.08,a.sampleRate);
+          const d=buf.getChannelData(0);
+          for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*0.012));
+          const src=a.createBufferSource();src.buffer=buf;
+          const g2=a.createGain();g2.gain.setValueAtTime(0.28,bt);g2.gain.exponentialRampToValueAtTime(0.001,bt+0.08);
+          src.connect(g2);g2.connect(a.destination);
+          src.start(bt);
+        }
       }
 
-      // Melody
-      BLAUE_BERGE.forEach(([freq,dur])=>{
+      // Melody — absolute timing from MIDI
+      BLAUE_BERGE.forEach(([freq,startOff,dur])=>{
         if(cancelled)return;
+        const t=loopStart+startOff;
         const os=a.createOscillator();
         const g2=a.createGain();
         os.connect(g2);g2.connect(gainMaster);
         os.type=mode==='splash'?'triangle':'square';
         os.frequency.setValueAtTime(freq,t);
-        const noteLen=dur/bps*0.85;
+        const noteLen=dur*0.88;
         g2.gain.setValueAtTime(0,t);
         g2.gain.linearRampToValueAtTime(1,t+0.015);
-        g2.gain.setValueAtTime(1,t+noteLen-0.04);
+        g2.gain.setValueAtTime(1,t+noteLen-0.03);
         g2.gain.linearRampToValueAtTime(0,t+noteLen);
         os.start(t);os.stop(t+noteLen+0.01);
-        t+=dur/bps;
       });
 
       // Schedule next loop
       if(!cancelled){
-        const loopDur=BLAUE_BERGE.reduce((s,[,d])=>s+d,0)/bps;
-        setTimeout(()=>playLoop(a.currentTime),loopDur*1000-200);
+        setTimeout(()=>{if(!cancelled)playLoop(a.currentTime+0.05);},MELODY_DURATION*1000-150);
       }
     }
     playLoop(a.currentTime+0.05);
