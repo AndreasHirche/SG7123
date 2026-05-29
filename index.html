@@ -126,15 +126,15 @@ function playMelody(mode){
       gainMaster.connect(a.destination);
 
       if(mode==='game'){
-        // Pattern: B---t--B-t---  (each unit = 1 sixteenth, beatLen = quarter)
-        // positions: B=0, t=4, B=7, t=9 — bar = 13 sixteenths
+        // Pattern: B . . . t . . B . . B . t . . .  (16 sixteenths)
         const sixteenth=0.25/speed;
-        const barLen=13*sixteenth;
+        const barLen=16*sixteenth;
         const barPattern=[
-          {t:0*sixteenth,  snare:false},
-          {t:4*sixteenth,  snare:true },
-          {t:7*sixteenth,  snare:false},
-          {t:9*sixteenth,  snare:true },
+          {t: 0*sixteenth, snare:false},
+          {t: 4*sixteenth, snare:true },
+          {t: 7*sixteenth, snare:false},
+          {t:10*sixteenth, snare:false},
+          {t:12*sixteenth, snare:true },
         ];
         const bars=Math.ceil(dur/barLen)+1;
         for(let bar=0;bar<bars;bar++){
