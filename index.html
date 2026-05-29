@@ -79,43 +79,16 @@ const W=720, H=400, FLOOR=H-62, WALL_SPLIT=FLOOR-155;
 let _ac=null;
 function ac(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
 
-// "Von den blauen Bergen kommen wir" — [freq_hz, duration_beats], F-Dur 3/4
-// F4=349 G4=392 A4=440 Bb4=466 C5=523 D5=587 E4=330 C4=262
+// "Von den blauen Bergen kommen wir" — [freq_hz, duration_beats], G-Dur 3/4
+// H=B3=247, d=D4=294, e=E4=330, g=G4=392  (Großbuchstabe = tiefe Oktave)
+// "-" = halbe Note (2 Schläge), ohne = Viertelnote (1 Schlag), 0=Pause
 const BLAUE_BERGE=[
-  // Auftakt: "Von den"
-  [262,0.5],[262,0.5],
-  // T2: "blau-  -en Ber- -gen kom-"
-  [349,2],[349,0.5],[392,0.5],[440,1],[349,1],
-  // T3: "-men wir, von den"
-  [440,3],[440,0.5],[466,0.5],
-  // T4: "Ber- -gen, die so weit von"
-  [523,3],[523,0.5],[466,0.5],[440,0.5],[392,0.5],
-  // T5: "hier. Auf dem"
-  [440,3],[349,0.5],[440,0.5],
-  // T6: "Rück-en uns-rer Pfer-de rei-ten"
-  [523,0.5],[523,0.5],[466,0.5],[440,0.5],[392,0.5],[440,0.5],[466,0.5],
-  // T7: "wir wohl um die Er-de von den"
-  [587,1],[466,1],[587,0.5],[523,0.5],[466,1],[392,1],
-  // T8: "blau-en Ber-gen kom-men"
-  [440,1],[349,1],[392,0.5],[440,0.5],[466,1],[392,1],
-  // T9: "wir. Sing-ing"
-  [349,3],[349,0.5],[440,0.5],
-  // T10: "yeah yeah jip-pie jip-pie"
-  [523,1],[440,1],[523,0.5],[440,0.5],[349,0.5],[440,0.5],
-  // T11: "yeah. Sing-ing"
-  [392,3],[330,0.5],[392,0.5],
-  // T12: "yeah yeah jip-pie jip-pie"
-  [466,1],[392,1],[466,0.5],[392,0.5],[330,0.5],[392,0.5],
-  // T13: "yeah. Sing-ing"
-  [440,3],[349,0.5],[440,0.5],
-  // T14: "yeah yeah jip-pie jip-pie" (= T10)
-  [523,1],[440,1],[523,0.5],[440,0.5],[349,0.5],[440,0.5],
-  // T15: "yeah yeah jip-pie jip-pie" (B-Dur)
-  [587,1],[466,1],[587,0.5],[466,0.5],[392,0.5],[466,0.5],
-  // T16: "yeah yeah jip-pie jip-pie" (abwärts)
-  [523,1],[440,1],[466,0.5],[440,0.5],[392,0.5],[330,0.5],
-  // T17: Schluss auf F
-  [349,4],
+  // "Von den blau-en Ber-gen kom-men wir" + Pause
+  [247,2],[294,1], // H- d
+  [392,1],[392,1], // g  g
+  [330,2],[294,2], // e- d-
+  [247,2],[294,1], // H- d
+  [392,2],[0,1],   // g  (Pause)
 ];
 
 let _melodyStop=null;
