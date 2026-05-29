@@ -79,17 +79,24 @@ const W=720, H=400, FLOOR=H-62, WALL_SPLIT=FLOOR-155;
 let _ac=null;
 function ac(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
 
-// "Von den blauen Bergen kommen wir" — notes as [freq_hz, duration_beats]
-// BPM 108, beat = 60/108 s ≈ 0.556 s
+// "Von den blauen Bergen kommen wir" — [freq_hz, duration_beats], C-Dur 4/4
+// C4=262 D4=294 E4=330 F4=349 G4=392 A4=440 B4=494 C5=523
 const BLAUE_BERGE=[
-  // "Von den blau-en Ber-gen kom-men wir"
-  [392,1],[392,1],[392,1],[330,1],[392,1],[440,1],[392,2],
-  // "ha-ben weit und breit kein Glück ge-spürt"
-  [294,1],[294,1],[294,1],[247,1],[294,1],[330,1],[294,2],
-  // "Doch wir tra-gen's mit Ge-duld"
-  [392,1],[440,1],[392,1],[330,1],[294,1],[330,2],
-  // "denn das ist der Ber-ge Schuld"
-  [247,1],[294,1],[330,1],[392,1],[440,1],[392,4],
+  // Strophe Zeile 1: "Von den blau-en Ber-gen kom-men wir"
+  [392,1],[392,1],[440,1],[392,1],[330,1],[392,1],[523,2],
+  // Zeile 2: "von den Ber-gen, die so weit"
+  [392,1],[440,1],[392,1],[294,2],[0,1],
+  // Zeile 3: "hat-ten auf den Bäu-men nur Quar-tier"
+  [392,1],[392,1],[440,1],[392,1],[330,1],[294,1],[330,1],[294,1],
+  // Zeile 4: "wohn-ten wo kein Mensch sonst ger-ne war"
+  [262,1],[330,1],[392,2],[262,4],
+  // Refrain Zeile 1+2: "pung pung pung, ja ja ja" (2×)
+  [262,1],[262,1],[262,1],[392,1],[440,1],[392,1],[330,2],
+  [262,1],[262,1],[262,1],[392,1],[440,1],[392,1],[330,2],
+  // Refrain Zeile 3: "Sing sang pung, ja ja ja"
+  [392,1],[392,1],[392,1],[440,1],[392,1],[349,1],[330,2],
+  // Refrain Zeile 4: "von den blau-en Ber-gen kom-men wir"
+  [262,1],[294,1],[330,1],[349,1],[330,1],[294,1],[262,2],
 ];
 
 let _melodyStop=null;
