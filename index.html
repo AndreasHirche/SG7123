@@ -78,6 +78,86 @@ const W=720, H=400, FLOOR=H-62, WALL_SPLIT=FLOOR-155;
 // ── Audio ─────────────────────────────────────────────────────────────────
 let _ac=null;
 function ac(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
+
+// "Von den blauen Bergen kommen wir" — notes as [freq_hz, duration_beats]
+// BPM 108, beat = 60/108 s ≈ 0.556 s
+const BLAUE_BERGE=[
+  // "Von den blau-en Ber-gen kom-men wir"
+  [392,1],[392,1],[392,1],[330,1],[392,1],[440,1],[392,2],
+  // "ha-ben weit und breit kein Glück ge-spürt"
+  [294,1],[294,1],[294,1],[247,1],[294,1],[330,1],[294,2],
+  // "Doch wir tra-gen's mit Ge-duld"
+  [392,1],[440,1],[392,1],[330,1],[294,1],[330,2],
+  // "denn das ist der Ber-ge Schuld"
+  [247,1],[294,1],[330,1],[392,1],[440,1],[392,4],
+];
+
+let _melodyStop=null;
+
+function stopMelody(){
+  if(_melodyStop){_melodyStop();_melodyStop=null;}
+}
+
+function playMelody(mode){
+  stopMelody();
+  try{
+    const a=ac();
+    const bps=(mode==='game'?116:100)/60; // slightly faster in-game
+    let cancelled=false;
+    _melodyStop=()=>{cancelled=true;};
+
+    function playLoop(loopStart){
+      if(cancelled)return;
+      let t=loopStart;
+      const gainMaster=a.createGain();
+      gainMaster.gain.setValueAtTime(mode==='splash'?0.18:0.12,t);
+      gainMaster.connect(a.destination);
+
+      if(mode==='game'){
+        // Rhythm: bass drum kick on every beat
+        BLAUE_BERGE.forEach(([,dur])=>{
+          for(let b=0;b<dur;b++){
+            if(cancelled)return;
+            const buf=a.createBuffer(1,a.sampleRate*0.08,a.sampleRate);
+            const d=buf.getChannelData(0);
+            for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*0.012));
+            const src=a.createBufferSource();src.buffer=buf;
+            const g2=a.createGain();g2.gain.setValueAtTime(0.35,t+b/bps);g2.gain.exponentialRampToValueAtTime(0.001,t+b/bps+0.08);
+            src.connect(g2);g2.connect(a.destination);
+            src.start(t+b/bps);
+          }
+          t+=dur/bps;
+        });
+        t=loopStart; // reset for melody overlay
+      }
+
+      // Melody
+      BLAUE_BERGE.forEach(([freq,dur])=>{
+        if(cancelled)return;
+        const os=a.createOscillator();
+        const g2=a.createGain();
+        os.connect(g2);g2.connect(gainMaster);
+        os.type=mode==='splash'?'triangle':'square';
+        os.frequency.setValueAtTime(freq,t);
+        const noteLen=dur/bps*0.85;
+        g2.gain.setValueAtTime(0,t);
+        g2.gain.linearRampToValueAtTime(1,t+0.015);
+        g2.gain.setValueAtTime(1,t+noteLen-0.04);
+        g2.gain.linearRampToValueAtTime(0,t+noteLen);
+        os.start(t);os.stop(t+noteLen+0.01);
+        t+=dur/bps;
+      });
+
+      // Schedule next loop
+      if(!cancelled){
+        const loopDur=BLAUE_BERGE.reduce((s,[,d])=>s+d,0)/bps;
+        setTimeout(()=>playLoop(a.currentTime),loopDur*1000-200);
+      }
+    }
+    playLoop(a.currentTime+0.05);
+  }catch(e){}
+}
+
 function playSound(type){
   try{
     const a=ac(),g=a.createGain(),now=a.currentTime;
@@ -127,7 +207,7 @@ document.addEventListener('keydown',e=>{
     if(e.code==='Enter'||e.code==='Space'){startGame();}
     e.preventDefault();return;
   }
-  if(state===ST.OVER&&(e.code==='Enter'||e.code==='Space')){state=ST.SPLASH;}
+  if(state===ST.OVER&&(e.code==='Enter'||e.code==='Space')){state=ST.SPLASH;playMelody('splash');}
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
 });
 document.addEventListener('keyup',e=>K[e.code]=false);
@@ -137,7 +217,7 @@ document.addEventListener('keyup',e=>K[e.code]=false);
 (function(){
   const btn=document.getElementById('tc-w');if(!btn)return;
   btn.addEventListener('touchstart',e=>{K['Space']=true;btn.classList.add('on');e.preventDefault();},{passive:false});
-  btn.addEventListener('touchend',e=>{K['Space']=false;btn.classList.remove('on');e.preventDefault();if(state===ST.SPLASH)startGame();if(state===ST.OVER)state=ST.SPLASH;},{passive:false});
+  btn.addEventListener('touchend',e=>{K['Space']=false;btn.classList.remove('on');e.preventDefault();if(state===ST.SPLASH)startGame();if(state===ST.OVER){state=ST.SPLASH;playMelody('splash');}},{passive:false});
 })();
 
 // Virtual joystick
@@ -184,7 +264,7 @@ document.addEventListener('keyup',e=>K[e.code]=false);
   base.addEventListener('touchend',e=>{
     e.preventDefault();
     for(const t of e.changedTouches)if(t.identifier===activeId){reset();break;}
-    if(state===ST.OVER)state=ST.SPLASH;
+    if(state===ST.OVER)state=ST.SPLASH;playMelody('splash');
   },{passive:false});
   base.addEventListener('touchcancel',()=>reset(),{passive:true});
 })();
@@ -242,6 +322,7 @@ let cpuThrowTimer,cpuMoveDir,cpuMoveClock,cpuHideKey=false,eventWarnAge=0;
 
 function startGame(){
   state=ST.PLAY;cpuSide=humanSide==='s'?'p':'s';
+  playMelody('game');
   players={
     s:{x:160,y:FLOOR,vx:0,vy:0,onGround:true,dir:1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'s'},
     p:{x:560,y:FLOOR,vx:0,vy:0,onGround:true,dir:-1,hiding:0,hideAnim:0,throwCD:0,hitFlash:0,side:'p'},
@@ -963,7 +1044,7 @@ function updatePhysics(){
         document.getElementById(sc).textContent=newScore;
         spawnText(plr.x,plr.y-44,`+${pts}`,ws==='s'?'#d4a820':'#909090');
         plr.hitFlash=20;spawnHit(pil.x,pil.y,10);pillows.splice(i,1);
-        if(newScore>=WIN_SCORE){winner=ws;state=ST.OVER;frame=0;}
+        if(newScore>=WIN_SCORE){winner=ws;state=ST.OVER;frame=0;stopMelody();}
         break;
       }
     }
@@ -1083,6 +1164,12 @@ function loop(ts){
   draw();requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+// Start splash melody on first user interaction (AudioContext requires a gesture)
+(function(){
+  function onFirst(){document.removeEventListener('keydown',onFirst);document.removeEventListener('pointerdown',onFirst);if(state===ST.SPLASH)playMelody('splash');}
+  document.addEventListener('keydown',onFirst);
+  document.addEventListener('pointerdown',onFirst);
+})();
 </script>
 </body>
 </html>
