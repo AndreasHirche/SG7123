@@ -950,37 +950,48 @@ function drawSvD(ev){
   px(-6,y-40,12,20,cc.shirt);
   // FDJ emblem hint — small yellow rising-sun stripe on left chest
   cx.fillStyle='#f0c820';cx.fillRect(-5,y-38,3,6);
-  // Left arm down holding book
-  cx.fillStyle=cc.shirt;cx.fillRect(-9,y-38,4,14);
-  cx.fillStyle='#c8a860';cx.fillRect(-10,y-26,6,8); // book cover
-  cx.fillStyle='#f0ead0';cx.fillRect(-9,y-25,4,6);  // book pages
-  cx.strokeStyle='#8a7040';cx.lineWidth=0.7;cx.strokeRect(-10,y-26,6,8);
-  cx.fillStyle='#5a3810';cx.font='bold 4px Courier New';cx.textAlign='center';
-  cx.fillText('DAS',-7,y-22-y-1);cx.textAlign='left';
-  // Right arm raised slightly — reading gesture, finger tracing line
-  cx.fillStyle=cc.shirt;cx.fillRect(5,y-40,4,12);
-  cx.fillStyle=cc.skin;cx.fillRect(5,y-30,4,5);
-  // Thin neck + pale head
-  cx.fillStyle=cc.skin;cx.fillRect(-3,y-44,6,6);
-  cx.fillStyle=cc.skin;cx.beginPath();cx.arc(0,y-51,8,0,Math.PI*2);cx.fill();
+  // Both arms raised holding big book in front of face
+  cx.fillStyle=cc.shirt;cx.fillRect(-9,y-40,4,18);  // left arm up
+  cx.fillStyle=cc.shirt;cx.fillRect(5,y-40,4,18);   // right arm up
+  cx.fillStyle=cc.skin;cx.fillRect(-9,y-24,4,5);    // left hand
+  cx.fillStyle=cc.skin;cx.fillRect(5,y-24,4,5);     // right hand
+  // Thick book cover (dark red, held at face height)
+  cx.fillStyle='#7a1a0a';cx.fillRect(-12,y-62,24,22);
+  // Book spine (left edge, darker)
+  cx.fillStyle='#4a0a04';cx.fillRect(-12,y-62,4,22);
+  // Pages (right edge, cream)
+  cx.fillStyle='#f0ead0';cx.fillRect(10,y-61,2,20);
+  // Page lines
+  cx.strokeStyle='#c8c0a0';cx.lineWidth=0.6;
+  for(let ln=0;ln<5;ln++){cx.beginPath();cx.moveTo(-7,y-58+ln*3);cx.lineTo(8,y-58+ln*3);cx.stroke();}
+  // Book title on cover
+  cx.fillStyle='#f0c830';cx.font='bold 5px Courier New';cx.textAlign='center';
+  cx.fillText('DAS KAPITAL',-1,y-54);
+  cx.fillText('BAND IV',-1,y-48);
+  cx.textAlign='left';
+  // Book outline
+  cx.strokeStyle='#2a0a04';cx.lineWidth=1.2;cx.strokeRect(-12,y-62,24,22);
+  // Thin neck + pale head — visible just above book
+  cx.fillStyle=cc.skin;cx.fillRect(-3,y-66,6,5);
+  cx.fillStyle=cc.skin;cx.beginPath();cx.arc(0,y-73,8,0,Math.PI*2);cx.fill();
   // Dark thin hair
-  cx.fillStyle=cc.hair;cx.beginPath();cx.arc(0,y-53,8,Math.PI,0);cx.fill();
-  // Thick round glasses — two circles
+  cx.fillStyle=cc.hair;cx.beginPath();cx.arc(0,y-75,8,Math.PI,0);cx.fill();
+  // Thick round glasses — two circles (peek over top of book)
   cx.strokeStyle='#1a1010';cx.lineWidth=2.5;
-  cx.beginPath();cx.arc(-5,y-51,4,0,Math.PI*2);cx.stroke();
-  cx.beginPath();cx.arc(5,y-51,4,0,Math.PI*2);cx.stroke();
-  cx.lineWidth=1.5;cx.beginPath();cx.moveTo(-1,y-51);cx.lineTo(1,y-51);cx.stroke();
+  cx.beginPath();cx.arc(-5,y-73,4,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.arc(5,y-73,4,0,Math.PI*2);cx.stroke();
+  cx.lineWidth=1.5;cx.beginPath();cx.moveTo(-1,y-73);cx.lineTo(1,y-73);cx.stroke();
   cx.lineWidth=1.2;
-  cx.beginPath();cx.moveTo(-9,y-51);cx.lineTo(-14,y-50);cx.stroke();
-  cx.beginPath();cx.moveTo(9,y-51);cx.lineTo(14,y-50);cx.stroke();
+  cx.beginPath();cx.moveTo(-9,y-73);cx.lineTo(-14,y-72);cx.stroke();
+  cx.beginPath();cx.moveTo(9,y-73);cx.lineTo(14,y-72);cx.stroke();
   // Downcast eyes (reading)
-  cx.fillStyle='#1a1010';cx.fillRect(-6,y-52,2,1);cx.fillRect(4,y-52,2,1);
+  cx.fillStyle='#1a1010';cx.fillRect(-6,y-74,2,1);cx.fillRect(4,y-74,2,1);
   // Floating book-text squiggles above head (distracted thoughts)
   cx.restore();cx.save();cx.globalAlpha=alpha*0.6;
   for(let q=0;q<3;q++){
     const age=((frame*0.014+q*0.33)%1);
     const qx=x+(ev.dir===1?-6:6)+q*5*ev.dir;
-    const qy=y-68-age*22;
+    const qy=y-90-age*22;
     const qa=(age<0.15?age/0.15:age>0.7?(1-age)/0.3:1);
     cx.save();cx.globalAlpha=cx.globalAlpha*qa;
     cx.strokeStyle='#c8e860';cx.lineWidth=1.5;cx.lineCap='round';
@@ -1306,7 +1317,7 @@ function draw(){
     drawFlood();drawParticles();
     for(const plr of Object.values(players))drawHideBar(plr);
     if(eventWarnAge>0&&activeEvent){
-      const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!',winkler:'⚠  HERR WINKLER!',hancke:'⚠  HERR HANCKE!',svd:'⚠  STUDENT VOM DIENST!'};
+      const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!',winkler:'⚠  HERR WINKLER!',hancke:'⚠  HERR HANCKE!',svd:'⚠  STUDENT VOM DIENST (SvD)!'};
       const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)',winkler:'rgba(30,70,30,0.92)',hancke:'rgba(50,30,10,0.92)',svd:'rgba(20,60,20,0.92)'};
       const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!',winkler:'Fenster öffnen! (↑ springen)',hancke:'Schnell ducken! (↓)',svd:'Schnell ducken! (↓)'};
       drawWarning(wt[activeEvent.type],wc[activeEvent.type],ws[activeEvent.type]);
