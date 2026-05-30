@@ -300,6 +300,22 @@ function playSound(type){
       os.frequency.setValueAtTime(480,now);os.frequency.linearRampToValueAtTime(820,now+0.4);os.frequency.linearRampToValueAtTime(620,now+0.8);
       g.gain.setValueAtTime(0.16,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.9);
       os.start(now);os.stop(now+1);
+    }else if(type==='svd'){
+      // Wirre Melodie: zufällig springende Töne wie beim Lesen stolpern
+      const scale=[220,246,277,311,330,370,415,440,494,523,587,659];
+      let t=now;
+      for(let i=0;i<14;i++){
+        const f=scale[~~(Math.random()*scale.length)]*(Math.random()<0.2?2:1);
+        const dur=0.04+Math.random()*0.13;
+        const os2=a.createOscillator();os2.type=Math.random()<0.5?'triangle':'square';
+        const gn=a.createGain();os2.connect(gn);gn.connect(a.destination);
+        gn.gain.setValueAtTime(0,t);
+        gn.gain.linearRampToValueAtTime(0.18+Math.random()*0.12,t+0.01);
+        gn.gain.exponentialRampToValueAtTime(0.001,t+dur);
+        os2.frequency.setValueAtTime(f,t);
+        os2.start(t);os2.stop(t+dur+0.01);
+        t+=dur*(0.6+Math.random()*0.8);
+      }
     }
   }catch(e){}
 }
@@ -415,6 +431,7 @@ const CC={
   jan:{skin:'#c89060',hair:'#5a3010',shirt:'#2a5a9a',pants:'#1e3a6e'},
   carmen:{skin:'#f0c8a0',hair:'#101010'},
   teurich:{skin:'#f0c8b0',hair:'#c0392b',shirt:'#9a60c0',pants:'#3a3050'},
+  svd:{skin:'#e8dcc8',hair:'#1a1000',shirt:'#1a5a9a',pants:'#2a2a1e'},
 };
 const WIN_SCORE=40;
 const BED_H=32;
@@ -912,6 +929,69 @@ function drawHancke(ev){
   cx.restore();
 }
 
+function drawSvD(ev){
+  const x=ev.x,y=FLOOR;
+  const cc=CC.svd;
+  const alpha=ev.phase==='enter'?Math.min(1,ev.progress*4):Math.max(0,1-(ev.progress-0.6)*4);
+  cx.save();cx.globalAlpha=alpha;
+  cx.translate(x,0);cx.scale(ev.dir,1);
+  // Stumbling walk: slight bob and lean forward
+  const step=Math.sin(frame*0.2)*3;
+  const lean=0.12+Math.sin(frame*0.2)*0.06;
+  cx.rotate(lean);
+  // Thin legs
+  cx.fillStyle=cc.pants;
+  cx.beginPath();cx.moveTo(-4+step,y);cx.lineTo(-5+step,y-22);cx.lineTo(0+step,y-22);cx.lineTo(0+step,y);cx.closePath();cx.fill();
+  cx.fillStyle=cc.pants;
+  cx.beginPath();cx.moveTo(4-step,y);cx.lineTo(5-step,y-22);cx.lineTo(0-step,y-22);cx.lineTo(0-step,y);cx.closePath();cx.fill();
+  cx.fillStyle='#1a1010';cx.beginPath();cx.roundRect(-5+step,y-3,5,4,1);cx.fill();
+  cx.fillStyle='#1a1010';cx.beginPath();cx.roundRect(1-step,y-3,5,4,1);cx.fill();
+  // Slim FDJ-blue shirt body
+  px(-6,y-40,12,20,cc.shirt);
+  // FDJ emblem hint — small yellow rising-sun stripe on left chest
+  cx.fillStyle='#f0c820';cx.fillRect(-5,y-38,3,6);
+  // Left arm down holding book
+  cx.fillStyle=cc.shirt;cx.fillRect(-9,y-38,4,14);
+  cx.fillStyle='#c8a860';cx.fillRect(-10,y-26,6,8); // book cover
+  cx.fillStyle='#f0ead0';cx.fillRect(-9,y-25,4,6);  // book pages
+  cx.strokeStyle='#8a7040';cx.lineWidth=0.7;cx.strokeRect(-10,y-26,6,8);
+  cx.fillStyle='#5a3810';cx.font='bold 4px Courier New';cx.textAlign='center';
+  cx.fillText('DAS',-7,y-22-y-1);cx.textAlign='left';
+  // Right arm raised slightly — reading gesture, finger tracing line
+  cx.fillStyle=cc.shirt;cx.fillRect(5,y-40,4,12);
+  cx.fillStyle=cc.skin;cx.fillRect(5,y-30,4,5);
+  // Thin neck + pale head
+  cx.fillStyle=cc.skin;cx.fillRect(-3,y-44,6,6);
+  cx.fillStyle=cc.skin;cx.beginPath();cx.arc(0,y-51,8,0,Math.PI*2);cx.fill();
+  // Dark thin hair
+  cx.fillStyle=cc.hair;cx.beginPath();cx.arc(0,y-53,8,Math.PI,0);cx.fill();
+  // Thick round glasses — two circles
+  cx.strokeStyle='#1a1010';cx.lineWidth=2.5;
+  cx.beginPath();cx.arc(-5,y-51,4,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.arc(5,y-51,4,0,Math.PI*2);cx.stroke();
+  cx.lineWidth=1.5;cx.beginPath();cx.moveTo(-1,y-51);cx.lineTo(1,y-51);cx.stroke();
+  cx.lineWidth=1.2;
+  cx.beginPath();cx.moveTo(-9,y-51);cx.lineTo(-14,y-50);cx.stroke();
+  cx.beginPath();cx.moveTo(9,y-51);cx.lineTo(14,y-50);cx.stroke();
+  // Downcast eyes (reading)
+  cx.fillStyle='#1a1010';cx.fillRect(-6,y-52,2,1);cx.fillRect(4,y-52,2,1);
+  // Floating book-text squiggles above head (distracted thoughts)
+  cx.restore();cx.save();cx.globalAlpha=alpha*0.6;
+  for(let q=0;q<3;q++){
+    const age=((frame*0.014+q*0.33)%1);
+    const qx=x+(ev.dir===1?-6:6)+q*5*ev.dir;
+    const qy=y-68-age*22;
+    const qa=(age<0.15?age/0.15:age>0.7?(1-age)/0.3:1);
+    cx.save();cx.globalAlpha=cx.globalAlpha*qa;
+    cx.strokeStyle='#c8e860';cx.lineWidth=1.5;cx.lineCap='round';
+    cx.beginPath();
+    cx.moveTo(qx,qy);cx.lineTo(qx+4,qy+2);cx.lineTo(qx+8,qy);cx.lineTo(qx+12,qy+2);
+    cx.stroke();
+    cx.restore();
+  }
+  cx.restore();
+}
+
 // ── Flood & Pillow ────────────────────────────────────────────────────────
 function drawFlood(){
   if(floodLevel<=0)return;
@@ -1156,13 +1236,13 @@ function updatePhysics(){
 function updateEvent(){
   nextEvent--;
   if(!activeEvent&&nextEvent<=0){
-    const types=['abv','hausmeister','carmen','teurich','winkler','hancke'];
+    const types=['abv','hausmeister','carmen','teurich','winkler','hancke','svd'];
     const t=types[~~(Math.random()*types.length)];
-    const fromRight=t==='carmen'||(t==='winkler'||t==='hancke')&&Math.random()>0.5;
+    const fromRight=t==='carmen'||(t==='winkler'||t==='hancke'||t==='svd')&&Math.random()>0.5;
     activeEvent={type:t,progress:0,phase:'enter',x:fromRight?W+50:-60,dir:fromRight?-1:1,floodY:0};
     if(t==='winkler'){windowOpen={s:false,p:false};if(windowAnim)windowAnim={s:0,p:0};if(windowTimer)windowTimer={s:0,p:0};}
     nextEvent=450+Math.random()*550;eventWarnAge=220;
-    playSound(t==='teurich'?'teurich':t==='abv'?'abv':t==='hausmeister'?'hausmeister':t==='winkler'?'winkler':t==='hancke'?'hancke':'carmen');
+    playSound(t==='teurich'?'teurich':t==='abv'?'abv':t==='hausmeister'?'hausmeister':t==='winkler'?'winkler':t==='hancke'?'hancke':t==='svd'?'svd':'carmen');
   }
   if(eventWarnAge>0)eventWarnAge--;
   if(!activeEvent)return;
@@ -1220,14 +1300,15 @@ function draw(){
       else if(activeEvent.type==='carmen')drawCarmen(activeEvent);
       else if(activeEvent.type==='winkler')drawWinkler(activeEvent);
       else if(activeEvent.type==='hancke')drawHancke(activeEvent);
+      else if(activeEvent.type==='svd')drawSvD(activeEvent);
       else drawTeurich(activeEvent);
     }
     drawFlood();drawParticles();
     for(const plr of Object.values(players))drawHideBar(plr);
     if(eventWarnAge>0&&activeEvent){
-      const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!',winkler:'⚠  HERR WINKLER!',hancke:'⚠  HERR HANCKE!'};
-      const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)',winkler:'rgba(30,70,30,0.92)',hancke:'rgba(50,30,10,0.92)'};
-      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!',winkler:'Fenster öffnen! (↑ springen)',hancke:'Schnell ducken! (↓)'};
+      const wt={abv:'⚠  ABV − DEIN FREUND UND HELFER!',hausmeister:'⚠  HAUSMEISTER!',carmen:'⚠  CARMEN + ÜBERSCHWEMMUNG!',teurich:'⚠  HEIMLEITERIN TEURICH!',winkler:'⚠  HERR WINKLER!',hancke:'⚠  HERR HANCKE!',svd:'⚠  STUDENT VOM DIENST!'};
+      const wc={abv:'rgba(55,55,50,0.92)',hausmeister:'rgba(20,50,120,0.92)',carmen:'rgba(15,50,130,0.92)',teurich:'rgba(80,10,80,0.92)',winkler:'rgba(30,70,30,0.92)',hancke:'rgba(50,30,10,0.92)',svd:'rgba(20,60,20,0.92)'};
+      const ws={abv:'Schnell ducken! (↓)',hausmeister:'Schnell ducken! (↓)',carmen:'Auf das Bett springen! (↑)',teurich:'SCHNELL DUCKEN! − DOPPELTE STRAFE!',winkler:'Fenster öffnen! (↑ springen)',hancke:'Schnell ducken! (↓)',svd:'Schnell ducken! (↓)'};
       drawWarning(wt[activeEvent.type],wc[activeEvent.type],ws[activeEvent.type]);
     }
     if(state===ST.OVER)drawGameOver();
