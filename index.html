@@ -370,7 +370,7 @@ document.addEventListener('keyup',e=>K[e.code]=false);
   base.addEventListener('touchend',e=>{
     e.preventDefault();
     for(const t of e.changedTouches)if(t.identifier===activeId){reset();break;}
-    if(state===ST.OVER)state=ST.SPLASH;playMelody('splash');
+    if(state===ST.OVER){state=ST.SPLASH;playMelody('splash');}
   },{passive:false});
   base.addEventListener('touchcancel',()=>reset(),{passive:true});
 })();
@@ -1012,9 +1012,9 @@ function drawSplash(){
   }
   // Controls hint
   cx.textAlign='center';
-  cx.fillStyle='#000';cx.fillRect(W/2-230,278,460,18);
-  cx.fillStyle='#607848';cx.font='11px "Courier New",monospace';
-  cx.fillText('← → wählen  |  TIPPEN / LEERTASTE starten',W/2,292);
+  cx.fillStyle='#000';cx.fillRect(W/2-230,278,460,20);
+  cx.fillStyle='#c8a030';cx.font='18px "Courier New",monospace';
+  cx.fillText('← → wählen  |  TIPPEN / LEERTASTE starten',W/2,294);
   cx.textAlign='left';
 }
 
@@ -1267,9 +1267,15 @@ function loop(ts){
 requestAnimationFrame(loop);
 // Start splash melody on first user interaction (AudioContext requires a gesture)
 (function(){
-  function onFirst(){document.removeEventListener('keydown',onFirst);document.removeEventListener('pointerdown',onFirst);if(state===ST.SPLASH)playMelody('splash');}
-  document.addEventListener('keydown',onFirst);
-  document.addEventListener('pointerdown',onFirst);
+  function onFirst(){
+    document.removeEventListener('keydown',onFirst,true);
+    document.removeEventListener('pointerdown',onFirst,true);
+    document.removeEventListener('touchstart',onFirst,true);
+    if(state===ST.SPLASH)playMelody('splash');
+  }
+  document.addEventListener('keydown',onFirst,true);
+  document.addEventListener('pointerdown',onFirst,{capture:true,passive:true});
+  document.addEventListener('touchstart',onFirst,{capture:true,passive:true});
 })();
 </script>
 </body>
