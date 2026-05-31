@@ -45,12 +45,12 @@ canvas{border:3px solid #5a4a28;border-radius:2px;display:block;max-width:100vw;
     clip-path:path('M 0,0 Q 50,12 100,0 Q 82,30 100,60 Q 50,54 0,60 Q 18,30 0,0 Z')!important}
 }
 @media(pointer:coarse) and (orientation:landscape){
-  body{flex-direction:row;overflow:hidden;align-items:center;justify-content:center}
+  body{flex-direction:column;overflow:hidden;align-items:center;justify-content:center;padding:32px 120px 0}
   #hud{position:absolute;top:0;left:0;right:0;z-index:10;max-width:none;border-radius:0;border-left:none;border-right:none;font-size:0.85rem;padding:3px 8px}
-  canvas{width:calc(100vw - 240px);height:auto;max-height:calc(100dvh - 32px);border:none;margin-top:32px;flex-shrink:0;order:0}
-  #touch-ctrl{display:flex!important;flex-direction:row;width:100%;height:100dvh;padding:0;position:absolute;top:0;left:0;pointer-events:none}
-  #tc-left{display:flex!important;position:absolute;left:0;top:0;width:120px;height:100dvh;align-items:center;justify-content:center;pointer-events:all}
-  #tc-right{display:flex!important;position:absolute;right:0;top:0;width:120px;height:100dvh;align-items:center;justify-content:center;pointer-events:all}
+  canvas{width:100%;height:auto;max-height:calc(100dvh - 32px);border:none;flex-shrink:0}
+  #touch-ctrl{display:block!important;position:fixed;inset:0;pointer-events:none}
+  #tc-left{display:flex!important;position:fixed;left:0;top:0;width:120px;height:100dvh;align-items:center;justify-content:center;pointer-events:all}
+  #tc-right{display:flex!important;position:fixed;right:0;top:0;width:120px;height:100dvh;align-items:center;justify-content:center;pointer-events:all}
   #joystick-base{width:80px!important;height:80px!important}
   .tc-throw{width:76px!important;height:46px!important;
     clip-path:path('M 0,0 Q 38,9 76,0 Q 62,23 76,46 Q 38,37 0,46 Q 14,23 0,0 Z')!important}
